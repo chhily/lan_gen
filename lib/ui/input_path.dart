@@ -29,7 +29,7 @@ class InputPath extends StatelessWidget {
         ),
         AppSpace.y(),
         TextFormField(
-          controller: translateTextController,
+          controller: localeKeyTextController,
           decoration: InputDecoration(labelText: "Locale Keys path"),
         ),
       ],

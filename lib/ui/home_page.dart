@@ -31,6 +31,8 @@ class _HomePageState extends State<HomePage> {
 
   ExportMode exportMode = ExportMode.overWrite;
 
+  bool useCamelCase = false;
+
   Future<void> pickSheetFile() async {
     try {
       final result = await fileServices.pickExcelFile();
@@ -64,6 +66,23 @@ class _HomePageState extends State<HomePage> {
         Exportor.i.exportTranslations(translations);
       case ExportMode.merge:
         Exportor.i.exportWithMerged(translations: translations);
+    }
+  }
+
+  void generateTranslations() {
+    switch (exportMode) {
+      case ExportMode.overWrite:
+        Exportor.i.exportTranslations(
+          translations,
+          userDir: translateTextController.text,
+          userLocaleKeyDir: localeKeyTextController.text,
+        );
+      case ExportMode.merge:
+        Exportor.i.exportWithMerged(
+          translations: translations,
+          userDir: translateTextController.text,
+          userLocaleKeyDir: localeKeyTextController.text,
+        );
     }
   }
 
@@ -112,8 +131,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: kToolbarHeight + 12,
         flexibleSpace: Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.all(12.0),
           child: Row(
             children: [
               ToggleButtons(
@@ -131,12 +151,26 @@ class _HomePageState extends State<HomePage> {
                   Padding(padding: EdgeInsets.all(8), child: Text("MERGE")),
                 ],
               ),
+              AppSpace.x(),
+              ToggleButtons(
+                onPressed: (index) {
+                  setState(() {
+                    useCamelCase = !useCamelCase;
+                  });
+                },
+                isSelected: [useCamelCase == true],
+                children: [
+                  Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text("USE CAMELCASE"),
+                  ),
+                ],
+              ),
+
               Spacer(),
-              AppButton(
-                text: "Clear",
-                width: 200,
-                onPressed: () => clearData(),
-                background: AppColors.error,
+              Text(
+                "aoi.dev",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -227,10 +261,17 @@ class _HomePageState extends State<HomePage> {
                       onShowSnackBar("Path cannot be empty!");
                       return;
                     }
+                    generateTranslations();
                   },
                 ),
               ),
             ],
+          ),
+          AppSpace.y(),
+          AppButton(
+            text: "Clear",
+            onPressed: () => clearData(),
+            background: AppColors.error,
           ),
           AppSpace.y(y: 32),
 

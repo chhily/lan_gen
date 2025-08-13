@@ -15,8 +15,11 @@ class Exportor {
 
   Future<void> exportWithMerged({
     required Map<String, Map<String, String>> translations,
+    String? userDir,
+    String? userLocaleKeyDir,
+    bool useCamelCase = false,
   }) async {
-    String? outputDir = await FilePicker.platform.getDirectoryPath();
+    String? outputDir = userDir ?? await FilePicker.platform.getDirectoryPath();
     if (outputDir == null) return;
     translations.forEach((lang, newMap) {
       final filePath = '$outputDir/$lang.json';
@@ -30,12 +33,21 @@ class Exportor {
         filePath,
       ).writeAsStringSync(JsonEncoder.withIndent(' ').convert(mergedMap));
     });
+
+    LocaleKeyGenerator.i.generateKeysFile(
+      translations: translations,
+      outputDir: userLocaleKeyDir ?? outputDir,
+      useCamelCase: useCamelCase,
+    );
   }
 
   Future<void> exportTranslations(
-    Map<String, Map<String, String>> translations,
-  ) async {
-    String? outputDir = await FilePicker.platform.getDirectoryPath();
+    Map<String, Map<String, String>> translations, {
+    String? userDir,
+    String? userLocaleKeyDir,
+    bool useCamelCase = false,
+  }) async {
+    String? outputDir = userDir ?? await FilePicker.platform.getDirectoryPath();
 
     if (outputDir != null) {
       translations.forEach((lang, map) {
@@ -45,8 +57,8 @@ class Exportor {
 
       LocaleKeyGenerator.i.generateKeysFile(
         translations: translations,
-        outputDir: outputDir,
-        useCamelCase: false,
+        outputDir: userLocaleKeyDir ?? outputDir,
+        useCamelCase: useCamelCase,
       );
     }
   }

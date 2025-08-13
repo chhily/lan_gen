@@ -14,9 +14,8 @@ class AppButton extends StatelessWidget {
 
     this.isLoading = false,
     this.icon,
-    this.width,
-    this.height,
     this.background,
+    this.fixedSize,
   });
 
   final String text;
@@ -24,19 +23,14 @@ class AppButton extends StatelessWidget {
   final AppButtonType type;
   final bool isLoading;
   final IconData? icon;
-  final double? width;
-  final double? height;
   final Color? background;
+  final Size? fixedSize;
 
   @override
   Widget build(BuildContext context) {
     final buttonWidget = _buildButtonWidget(context);
 
-    return SizedBox(
-      width: width ?? MediaQuery.of(context).size.width * 0.5,
-      height: height ?? AppDimensions.buttonHeight,
-      child: buttonWidget,
-    );
+    return buttonWidget;
   }
 
   Widget _buildButtonWidget(BuildContext context) {
@@ -47,7 +41,10 @@ class AppButton extends StatelessWidget {
     switch (type) {
       case AppButtonType.primary:
         return ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: background),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: background,
+            fixedSize: fixedSize,
+          ),
           onPressed: onPressed,
           child: _buildButtonContent(context),
         );
@@ -57,17 +54,20 @@ class AppButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: background ?? AppColors.secondary,
             foregroundColor: AppColors.textPrimary,
+            fixedSize: fixedSize,
           ),
           child: _buildButtonContent(context),
         );
       case AppButtonType.outline:
         return OutlinedButton(
           onPressed: onPressed,
+          style: OutlinedButton.styleFrom(fixedSize: fixedSize),
           child: _buildButtonContent(context),
         );
       case AppButtonType.text:
         return TextButton(
           onPressed: onPressed,
+          style: TextButton.styleFrom(fixedSize: fixedSize),
           child: _buildButtonContent(context),
         );
     }
