@@ -1,9 +1,11 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lan_gen/services/excel_parser.dart';
 import 'package:lan_gen/services/exportor.dart';
 import 'package:lan_gen/shared/widget/app_button.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
+import 'package:lan_gen/ui/input_path.dart';
 
 import '../services/file_services.dart';
 import '../shared/app_colors.dart';
@@ -18,6 +20,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late TextEditingController translateTextController,
+      localeKeyTextController,
+      excelFilePathController;
+
   String? filePath;
   Map<String, Map<String, String>> translations = {};
 
@@ -31,6 +37,9 @@ class _HomePageState extends State<HomePage> {
       if (result != null && result.files.single.path != null) {
         setState(() {
           filePath = result.files.single.path;
+          excelFilePathController.value = TextEditingValue(
+            text: result.files.single.path ?? "N/A",
+          );
         });
       }
     } catch (e) {
@@ -58,16 +67,54 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  bool useNestedClasses = false;
+  bool validateFilePath() {
+    return excelFilePathController.text.isNotEmpty &&
+        translateTextController.text.isNotEmpty &&
+        localeKeyTextController.text.isNotEmpty;
+  }
+
+  void clearData() {
+    FilePicker.platform.clearTemporaryFiles();
+    excelFilePathController.clear();
+    translateTextController.clear();
+    localeKeyTextController.clear();
+    ExcelParser.i.duplicateRecord.clear();
+    translations.clear();
+    filePath = null;
+    setState(() {});
+  }
+
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> onShowSnackBar(
+    String msg,
+  ) {
+    return ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), duration: Durations.medium1));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    translateTextController = TextEditingController();
+    localeKeyTextController = TextEditingController();
+    excelFilePathController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    translateTextController.dispose();
+    localeKeyTextController.dispose();
+    excelFilePathController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView(
-        padding: EdgeInsets.all(16),
-
-        children: [
-          Row(
+      appBar: AppBar(
+        flexibleSpace: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
             children: [
               ToggleButtons(
                 isSelected: [
@@ -80,14 +127,50 @@ class _HomePageState extends State<HomePage> {
                   });
                 },
                 children: const [
-                  Padding(padding: EdgeInsets.all(8), child: Text("MERGE")),
                   Padding(padding: EdgeInsets.all(8), child: Text("OVERWRITE")),
+                  Padding(padding: EdgeInsets.all(8), child: Text("MERGE")),
                 ],
+              ),
+              Spacer(),
+              AppButton(
+                text: "Clear",
+                width: 200,
+                onPressed: () => clearData(),
+                background: AppColors.error,
               ),
             ],
           ),
+        ),
+      ),
+      body: ListView(
+        padding: EdgeInsets.all(16),
 
-          AppSpace.y(y: 32),
+        children: [
+          ExpansionTile(
+            iconColor: AppColors.warning,
+            initiallyExpanded: true,
+
+            title: Text(
+              "GEN FILE PATH INPUT",
+              style: TextStyle(
+                color: AppColors.warning,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            tilePadding: EdgeInsets.zero,
+            children: [
+              AppSpace.y(),
+
+              InputPath(
+                excelFilePathController: excelFilePathController,
+                translateTextController: translateTextController,
+                localeKeyTextController: localeKeyTextController,
+              ),
+              AppSpace.y(),
+            ],
+          ),
+
+          AppSpace.y(),
 
           Text('Select your Excel file with translations'),
           AppSpace.y(),
@@ -117,9 +200,7 @@ class _HomePageState extends State<HomePage> {
                   icon: const Icon(Icons.copy, size: 20),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: filePath ?? ""));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('File path copied')),
-                    );
+                    onShowSnackBar("File Path copied!");
                   },
                 ),
               ],
@@ -141,7 +222,12 @@ class _HomePageState extends State<HomePage> {
                   text: "GENERATE",
                   icon: Icons.autorenew_rounded,
                   background: AppColors.success,
-                  onPressed: () => exportTranslations(),
+                  onPressed: () {
+                    if (!validateFilePath()) {
+                      onShowSnackBar("Path cannot be empty!");
+                      return;
+                    }
+                  },
                 ),
               ),
             ],
@@ -151,14 +237,20 @@ class _HomePageState extends State<HomePage> {
           DuplicatePanel(duplicates: ExcelParser.i.duplicateRecord),
           AppSpace.y(y: 32),
 
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.all(12),
-              child: TranslationPreview(translations: translations),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Preview", style: TextStyle(fontSize: 20)),
+                AppSpace.y(),
+                TranslationPreview(translations: translations),
+              ],
             ),
           ),
         ],

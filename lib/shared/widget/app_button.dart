@@ -33,7 +33,7 @@ class AppButton extends StatelessWidget {
     final buttonWidget = _buildButtonWidget(context);
 
     return SizedBox(
-      width: width ?? MediaQuery.of(context).size.width,
+      width: width ?? MediaQuery.of(context).size.width * 0.5,
       height: height ?? AppDimensions.buttonHeight,
       child: buttonWidget,
     );
