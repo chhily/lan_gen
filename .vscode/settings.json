@@ -1,0 +1,9 @@
+{
+    "javascript.format.insertSpaceAfterCommaDelimiter": false,
+    "editor.autoClosingDelete": "never",
+    "terminal.integrated.automationProfile.osx": {
+
+    },
+    "typescript.format.insertSpaceAfterCommaDelimiter": false,
+    "editor.defaultFormatter": null
+}
