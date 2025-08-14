@@ -19,26 +19,31 @@ class Exportor {
     String? userLocaleKeyDir,
     bool useCamelCase = false,
   }) async {
-    String? outputDir = userDir ?? await FilePicker.platform.getDirectoryPath();
-    if (outputDir == null) return;
-    translations.forEach((lang, newMap) {
-      final filePath = '$outputDir/$lang.json';
-      final existingMap = ExcelParser.i.loadExistingJson(filePath);
-      final mergedMap = ExcelParser.i.mergTranslation(
-        existing: existingMap,
-        incoming: newMap,
+    try {
+      String? outputDir =
+          userDir ?? await FilePicker.platform.getDirectoryPath();
+      if (outputDir == null) return;
+      translations.forEach((lang, newMap) {
+        final filePath = '$outputDir/$lang.json';
+        final existingMap = ExcelParser.i.loadExistingJson(filePath);
+        final mergedMap = ExcelParser.i.mergTranslation(
+          existing: existingMap,
+          incoming: newMap,
+        );
+
+        File(
+          filePath,
+        ).writeAsStringSync(JsonEncoder.withIndent(' ').convert(mergedMap));
+      });
+
+      LocaleKeyGenerator.i.generateKeysFile(
+        translations: translations,
+        outputDir: userLocaleKeyDir ?? outputDir,
+        useCamelCase: useCamelCase,
       );
-
-      File(
-        filePath,
-      ).writeAsStringSync(JsonEncoder.withIndent(' ').convert(mergedMap));
-    });
-
-    LocaleKeyGenerator.i.generateKeysFile(
-      translations: translations,
-      outputDir: userLocaleKeyDir ?? outputDir,
-      useCamelCase: useCamelCase,
-    );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Future<void> exportTranslations(
@@ -47,19 +52,24 @@ class Exportor {
     String? userLocaleKeyDir,
     bool useCamelCase = false,
   }) async {
-    String? outputDir = userDir ?? await FilePicker.platform.getDirectoryPath();
+    try {
+      String? outputDir =
+          userDir ?? await FilePicker.platform.getDirectoryPath();
 
-    if (outputDir != null) {
-      translations.forEach((lang, map) {
-        final file = File('$outputDir/$lang.json');
-        file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(map));
-      });
+      if (outputDir != null) {
+        translations.forEach((lang, map) {
+          final file = File('$outputDir/$lang.json');
+          file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(map));
+        });
 
-      LocaleKeyGenerator.i.generateKeysFile(
-        translations: translations,
-        outputDir: userLocaleKeyDir ?? outputDir,
-        useCamelCase: useCamelCase,
-      );
+        LocaleKeyGenerator.i.generateKeysFile(
+          translations: translations,
+          outputDir: userLocaleKeyDir ?? outputDir,
+          useCamelCase: useCamelCase,
+        );
+      }
+    } catch (e) {
+      rethrow;
     }
   }
 }

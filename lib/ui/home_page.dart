@@ -1,16 +1,21 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lan_gen/models/translation_data.dart';
 import 'package:lan_gen/services/excel_parser.dart';
 import 'package:lan_gen/services/exportor.dart';
 import 'package:lan_gen/shared/widget/app_button.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 import 'package:lan_gen/ui/input_path.dart';
+import 'package:lan_gen/utils/exportor_manager.dart';
 
 import '../services/file_services.dart';
 import '../shared/app_colors.dart';
 import 'duplicate_panel.dart';
 import 'translate_preview.dart';
+
+ValueNotifier<List<TranslationData>?> translationNotifier =
+    ValueNotifier<List<TranslationData>?>(null);
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -61,28 +66,46 @@ class _HomePageState extends State<HomePage> {
   }
 
   void exportTranslations() {
-    switch (exportMode) {
-      case ExportMode.overWrite:
-        Exportor.i.exportTranslations(translations);
-      case ExportMode.merge:
-        Exportor.i.exportWithMerged(translations: translations);
+    try {
+      switch (exportMode) {
+        case ExportMode.overWrite:
+          Exportor.i.exportTranslations(
+            translations,
+            useCamelCase: useCamelCase,
+          );
+        case ExportMode.merge:
+          Exportor.i.exportWithMerged(
+            translations: translations,
+            useCamelCase: useCamelCase,
+          );
+      }
+      onShowSnackBar("Success!");
+    } catch (e) {
+      onShowSnackBar("Error : $e");
     }
   }
 
   void generateTranslations() {
-    switch (exportMode) {
-      case ExportMode.overWrite:
-        Exportor.i.exportTranslations(
-          translations,
-          userDir: translateTextController.text,
-          userLocaleKeyDir: localeKeyTextController.text,
-        );
-      case ExportMode.merge:
-        Exportor.i.exportWithMerged(
-          translations: translations,
-          userDir: translateTextController.text,
-          userLocaleKeyDir: localeKeyTextController.text,
-        );
+    try {
+      switch (exportMode) {
+        case ExportMode.overWrite:
+          Exportor.i.exportTranslations(
+            translations,
+            userDir: translateTextController.text,
+            useCamelCase: useCamelCase,
+            userLocaleKeyDir: localeKeyTextController.text,
+          );
+        case ExportMode.merge:
+          Exportor.i.exportWithMerged(
+            translations: translations,
+            useCamelCase: useCamelCase,
+            userDir: translateTextController.text,
+            userLocaleKeyDir: localeKeyTextController.text,
+          );
+      }
+      onShowSnackBar("Success!");
+    } catch (e) {
+      onShowSnackBar("Error : $e");
     }
   }
 
@@ -90,6 +113,29 @@ class _HomePageState extends State<HomePage> {
     return excelFilePathController.text.isNotEmpty &&
         translateTextController.text.isNotEmpty &&
         localeKeyTextController.text.isNotEmpty;
+  }
+
+  Future<void> saveData() async {
+    await ExportPathManager.saveTranslation(
+          TranslationData(
+            name: "name",
+            excelFilePath: excelFilePathController.text.trim(),
+            savedTranslateFilePath: translateTextController.text.trim(),
+            savedLocaleKeyFilePath: localeKeyTextController.text.trim(),
+          ),
+        )
+        .whenComplete(() async {
+          await loadProjectHistory();
+        })
+        .onError((error, stackTrace) {
+          onShowSnackBar("Failed to save data!");
+          print(error);
+        });
+  }
+
+  Future<void> loadProjectHistory() async {
+    translationNotifier.value =
+        await ExportPathManager.getSavedTranslationDate();
   }
 
   void clearData() {
@@ -101,6 +147,7 @@ class _HomePageState extends State<HomePage> {
     translations.clear();
     filePath = null;
     setState(() {});
+    onShowSnackBar("Cleared!");
   }
 
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason> onShowSnackBar(
@@ -117,6 +164,7 @@ class _HomePageState extends State<HomePage> {
     translateTextController = TextEditingController();
     localeKeyTextController = TextEditingController();
     excelFilePathController = TextEditingController();
+    loadProjectHistory();
   }
 
   @override
@@ -177,8 +225,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: ListView(
-        padding: EdgeInsets.all(16),
-
+        padding: EdgeInsets.all(12),
         children: [
           ExpansionTile(
             iconColor: AppColors.warning,
@@ -203,79 +250,132 @@ class _HomePageState extends State<HomePage> {
               AppSpace.y(),
             ],
           ),
-
-          AppSpace.y(),
-
-          Text('Select your Excel file with translations'),
-          AppSpace.y(),
-
-          AppButton(
-            text: "CHOSE EXCEL FILE",
-            background: AppColors.secondaryDark,
-            icon: Icons.file_upload_rounded,
-            onPressed: () async {
-              await pickSheetFile();
-              await getSheetData();
-            },
-          ),
-
-          AppSpace.y(),
-          if (filePath != null)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'File: $filePath',
-
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy, size: 20),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: filePath ?? ""));
-                    onShowSnackBar("File Path copied!");
-                  },
-                ),
-              ],
-            ),
-
-          AppSpace.y(y: 24),
           Row(
             children: [
               Expanded(
-                child: AppButton(
-                  text: "EXPORT",
-                  icon: Icons.file_download_rounded,
-                  onPressed: () => exportTranslations(),
+                child: Column(
+                  children: [
+                    ValueListenableBuilder(
+                      valueListenable: translationNotifier,
+                      builder: (context, value, child) {
+                        return Column(
+                          children: List.generate(value?.length ?? 0, (index) {
+                            final itemValue = value?.elementAt(index);
+                            return Text("${itemValue?.excelFilePath}");
+                          }),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
-              AppSpace.x(),
               Expanded(
-                child: AppButton(
-                  text: "GENERATE",
-                  icon: Icons.autorenew_rounded,
-                  background: AppColors.success,
-                  onPressed: () {
-                    if (!validateFilePath()) {
-                      onShowSnackBar("Path cannot be empty!");
-                      return;
-                    }
-                    generateTranslations();
-                  },
+                child: Column(
+                  children: [
+                    AppSpace.y(),
+
+                    Text('Select your Excel file with translations'),
+                    AppSpace.y(),
+
+                    AppButton(
+                      text: "CHOSE EXCEL FILE",
+                      background: AppColors.secondaryDark,
+                      icon: Icons.file_upload_rounded,
+                      onPressed: () async {
+                        await pickSheetFile();
+                        await getSheetData();
+                      },
+                    ),
+
+                    AppSpace.y(),
+                    if (filePath != null)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'File: $filePath',
+
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy, size: 20),
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(text: filePath ?? ""),
+                              );
+                              onShowSnackBar("File Path copied!");
+                            },
+                          ),
+                        ],
+                      ),
+
+                    AppSpace.y(y: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            text: "EXPORT",
+                            icon: Icons.file_download_rounded,
+                            onPressed: () => exportTranslations(),
+                          ),
+                        ),
+                        AppSpace.x(),
+                        Expanded(
+                          child: AppButton(
+                            text: "GENERATE",
+                            icon: Icons.autorenew_rounded,
+                            background: AppColors.success,
+                            onPressed: () {
+                              if (!validateFilePath()) {
+                                onShowSnackBar("Path cannot be empty!");
+                                return;
+                              }
+                              generateTranslations();
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    AppSpace.y(),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: AppButton(
+                            text: "Clear",
+                            icon: Icons.delete_forever_rounded,
+                            onPressed: () => clearData(),
+                            background: AppColors.error,
+                          ),
+                        ),
+                        AppSpace.x(),
+                        Flexible(
+                          child: AppButton(
+                            text: "Save",
+                            icon: Icons.shopping_cart_rounded,
+                            onPressed: () {
+                              saveData();
+
+                              if (!validateFilePath()) {
+                                return;
+                              }
+                            },
+                            background: AppColors.primaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    AppSpace.y(y: 32),
+
+                    DuplicatePanel(duplicates: ExcelParser.i.duplicateRecord),
+                  ],
                 ),
               ),
             ],
           ),
-          AppSpace.y(),
-          AppButton(
-            text: "Clear",
-            onPressed: () => clearData(),
-            background: AppColors.error,
-          ),
-          AppSpace.y(y: 32),
 
-          DuplicatePanel(duplicates: ExcelParser.i.duplicateRecord),
           AppSpace.y(y: 32),
 
           Container(
