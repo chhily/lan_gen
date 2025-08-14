@@ -3,7 +3,7 @@ import 'package:lan_gen/shared/app_colors.dart';
 import 'package:lan_gen/shared/themes/app_text_theme.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 import 'package:lan_gen/ui/home_page.dart';
-import 'package:lan_gen/utils/exportor_manager.dart';
+import 'package:lan_gen/utils/storage_manager.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -19,7 +19,7 @@ class _HistoryPageState extends State<HistoryPage> {
       body: Column(
         children: [
           AppSpace.y(),
-          Text("< HISTORY/>", style: appTextTheme.headlineSmall),
+          Text("<HISTORY/>", style: appTextTheme.headlineSmall),
           Expanded(
             child: ValueListenableBuilder(
               valueListenable: translationNotifier,
@@ -61,10 +61,14 @@ class _HistoryPageState extends State<HistoryPage> {
                             AppSpace.x(),
                             IconButton.filled(
                               onPressed: () {
-                                ExportPathManager.deleteProject(
+                                StorageManager.deleteProject(
                                   itemValue!,
                                 ).whenComplete(() {
-                                  translationNotifier.value?.remove(itemValue);
+                                  setState(() {
+                                    translationNotifier.value?.remove(
+                                      itemValue,
+                                    );
+                                  });
                                 });
                               },
                               style: IconButton.styleFrom(

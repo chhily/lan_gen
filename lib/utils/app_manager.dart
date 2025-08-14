@@ -4,7 +4,7 @@ import 'package:lan_gen/services/excel_parser.dart';
 import '../models/translation_data.dart';
 import '../services/exportor.dart';
 import '../services/file_services.dart';
-import 'exportor_manager.dart';
+import 'storage_manager.dart';
 
 class AppManager {
   AppManager();
@@ -21,25 +21,33 @@ class AppManager {
     try {
       switch (exportMode) {
         case ExportMode.overWrite:
-          Exportor.i.exportTranslations(
-            translations,
-            userDir: userDir,
-            useCamelCase: useCamelCase,
-            userLocaleKeyDir: userLocaleKeyDir,
-          );
+          Exportor.i
+              .exportTranslations(
+                translations,
+                userDir: userDir,
+                useCamelCase: useCamelCase,
+                userLocaleKeyDir: userLocaleKeyDir,
+              )
+              .whenComplete(() {
+                if (!context.mounted) return;
+                showSnackBar(context, "Success!");
+              });
           break;
 
         case ExportMode.merge:
-          Exportor.i.exportWithMerged(
-            translations: translations,
-            useCamelCase: useCamelCase,
-            userDir: userDir,
-            userLocaleKeyDir: userLocaleKeyDir,
-          );
+          Exportor.i
+              .exportWithMerged(
+                translations: translations,
+                useCamelCase: useCamelCase,
+                userDir: userDir,
+                userLocaleKeyDir: userLocaleKeyDir,
+              )
+              .whenComplete(() {
+                if (!context.mounted) return;
+                showSnackBar(context, "Success!");
+              });
           break;
       }
-
-      showSnackBar(context, "Success!");
     } catch (e, stack) {
       debugPrint("Error exporting translations: $e\n$stack");
       showSnackBar(context, "Something went wrong: ${e.toString()}");
@@ -54,7 +62,7 @@ class AppManager {
     required String savedLocaleKeyFilePath,
     required Future<void> Function() loadProjectHistory,
   }) async {
-    await ExportPathManager.saveTranslation(
+    await StorageManager.saveTranslation(
           TranslationData(
             name: name,
             excelFilePath: excelFilePath,
@@ -71,12 +79,12 @@ class AppManager {
         });
   }
 
-  Future<FilePickerResult> pickSheetFile() async {
+  Future<FilePickerResult?> pickSheetFile() async {
     final result = await fileServices.pickExcelFile();
     if (result != null && result.files.single.path != null) {
       return result;
     }
-    throw Exception("No file selected");
+    return null;
   }
 
   Future<Map<String, Map<String, String>>?> getSheetData({
@@ -95,8 +103,8 @@ class AppManager {
   }
 
   void showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: Durations.medium4),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), duration: Durations.long4));
   }
 }

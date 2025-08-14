@@ -32,6 +32,7 @@ class ExcelParser {
         final lang = headers[col];
         final value = row[col]?.toString() ?? '';
 
+        // Check for duplicate record
         if (translations[lang]!.containsKey(key)) {
           duplicateRecord.add(
             DuplicateRecord(

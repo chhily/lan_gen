@@ -53,14 +53,25 @@ class LocaleKeyGenerator {
   }
 
   String _toCamelCase(String text) {
-    final parts = text.split('.');
-    return parts.first +
-        parts.skip(1).map((w) => w[0].toUpperCase() + w.substring(1)).join();
+    if (text.isEmpty) return text;
+
+    // Normalize separators into spaces
+    final separators = RegExp(r'[.\-_ ]+');
+    final parts = text.split(separators);
+
+    if (parts.isEmpty) return text;
+
+    // Lowercase first part, capitalize rest
+    return parts.first.toLowerCase() +
+        parts.skip(1).map((word) {
+          if (word.isEmpty) return '';
+          return word[0].toUpperCase() + word.substring(1);
+        }).join();
   }
 
   void generateKeysFile({
     required Map<String, Map<String, String>> translations,
-    required String outputDir,
+    required String? outputDir,
     bool? nested,
     bool useCamelCase = false,
   }) {
@@ -82,6 +93,7 @@ class LocaleKeyGenerator {
       buffer.writeln("class LocaleKeys {");
       for (final key in keys) {
         final constName = useCamelCase ? _toCamelCase(key) : _toSnakeCase(key);
+
         buffer.writeln("  static const $constName = '$key';");
       }
       buffer.writeln("}");

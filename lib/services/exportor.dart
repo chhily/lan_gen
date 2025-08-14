@@ -22,7 +22,6 @@ class Exportor {
     try {
       String? outputDir =
           userDir ?? await FilePicker.platform.getDirectoryPath();
-      if (outputDir == null) return;
       translations.forEach((lang, newMap) {
         final filePath = '$outputDir/$lang.json';
         final existingMap = ExcelParser.i.loadExistingJson(filePath);
@@ -56,19 +55,17 @@ class Exportor {
       String? outputDir =
           userDir ?? await FilePicker.platform.getDirectoryPath();
 
-      if (outputDir != null) {
-        translations.forEach((lang, map) {
-          final file = File('$outputDir/$lang.json');
-          file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(map));
-        });
+      translations.forEach((lang, map) {
+        final file = File('$outputDir/$lang.json');
+        file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(map));
+      });
 
-        LocaleKeyGenerator.i.generateKeysFile(
-          translations: translations,
-          outputDir: userLocaleKeyDir ?? outputDir,
-          useCamelCase: useCamelCase,
-        );
-      }
-    } catch (e) {
+      LocaleKeyGenerator.i.generateKeysFile(
+        translations: translations,
+        outputDir: userLocaleKeyDir ?? outputDir,
+        useCamelCase: useCamelCase,
+      );
+        } catch (e) {
       rethrow;
     }
   }

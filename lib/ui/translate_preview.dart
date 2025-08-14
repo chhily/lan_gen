@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lan_gen/shared/app_colors.dart';
+import 'package:lan_gen/shared/themes/app_text_theme.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 
 import '../shared/app_dimensions.dart';
@@ -49,17 +50,19 @@ class TranslationPreview extends StatelessWidget {
                     DataCell(
                       Text(
                         key,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: appTextTheme.bodyMedium?.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     for (final lang in languages)
                       DataCell(
                         Text(
                           translations[lang]?[key] ?? "",
-                          style: TextStyle(
+                          style: appTextTheme.bodyMedium?.copyWith(
                             color: (translations[lang]?[key]?.isEmpty ?? true)
                                 ? AppColors.error
-                                : null,
+                                : AppColors.textPrimary,
                           ),
                         ),
                       ),

@@ -1,8 +1,8 @@
 import 'package:hive/hive.dart';
 import 'package:lan_gen/models/translation_data.dart';
 
-class ExportPathManager {
-  ExportPathManager._();
+class StorageManager {
+  StorageManager._();
   static const _exportPathKey = 'export_path';
   static late Box<TranslationData> box;
 

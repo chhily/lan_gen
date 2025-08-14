@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lan_gen/models/translation_data.dart';
 import 'package:lan_gen/services/excel_parser.dart';
@@ -7,12 +6,18 @@ import 'package:lan_gen/ui/app_bar_action_button.dart';
 import 'package:lan_gen/ui/export_mode.dart';
 import 'package:lan_gen/ui/history_page.dart';
 import 'package:lan_gen/utils/app_manager.dart';
-import 'package:lan_gen/utils/exportor_manager.dart';
+import 'package:lan_gen/utils/storage_manager.dart';
 
 import 'translate_preview.dart';
 
 ValueNotifier<List<TranslationData>?> translationNotifier =
     ValueNotifier<List<TranslationData>?>(null);
+
+ValueNotifier<ExportMode> exportNotifier = ValueNotifier<ExportMode>(
+  ExportMode.overWrite,
+);
+
+ValueNotifier<bool> useCamelCaseNotifer = ValueNotifier<bool>(false);
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,10 +35,6 @@ class _HomePageState extends State<HomePage> {
   String? fileName;
   Map<String, Map<String, String>> translations = {};
 
-  ExportMode exportMode = ExportMode.overWrite;
-
-  bool useCamelCase = false;
-
   bool validateFilePath() {
     return excelFilePathController.text.isNotEmpty &&
         translateTextController.text.isNotEmpty &&
@@ -41,18 +42,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> loadProjectHistory() async {
-    translationNotifier.value =
-        await ExportPathManager.getSavedTranslationDate();
+    translationNotifier.value = await StorageManager.getSavedTranslationDate();
   }
 
   void clearData() {
-    FilePicker.platform.clearTemporaryFiles();
     excelFilePathController.clear();
     translateTextController.clear();
     localeKeyTextController.clear();
     ExcelParser.i.duplicateRecord.clear();
     translations.clear();
     filePath = null;
+    fileName = null;
     setState(() {});
     onShowSnackBar("Cleared!");
   }
@@ -94,8 +94,8 @@ class _HomePageState extends State<HomePage> {
           AppManager().exportTranslations(
             translations,
             context,
-            exportMode: exportMode,
-            useCamelCase: useCamelCase,
+            exportMode: exportNotifier.value,
+            useCamelCase: useCamelCaseNotifer.value,
             userDir: translateTextController.text.trim(),
             userLocaleKeyDir: localeKeyTextController.text.trim(),
           );
@@ -110,10 +110,10 @@ class _HomePageState extends State<HomePage> {
           AppBarActionButton(
             onImportFile: () async {
               final result = await AppManager().pickSheetFile();
-              if (result.files.isNotEmpty) {
+              if (result?.files != null) {
                 setState(() {
-                  filePath = result.files.single.path;
-                  fileName = result.files.single.name;
+                  filePath = result?.files.single.path;
+                  fileName = result?.files.single.name;
                   excelFilePathController.value = TextEditingValue(
                     text: filePath ?? "",
                   );
@@ -127,7 +127,8 @@ class _HomePageState extends State<HomePage> {
               AppManager().exportTranslations(
                 translations,
                 context,
-                exportMode: exportMode,
+                exportMode: exportNotifier.value,
+                useCamelCase: useCamelCaseNotifer.value,
               );
             },
             onOpenHistory: () {
@@ -149,8 +150,7 @@ class _HomePageState extends State<HomePage> {
         padding: EdgeInsets.all(12),
         children: [
           ExportModeWidget(
-            exportMode: exportMode,
-            useCamelCase: useCamelCase,
+            projectName: fileName,
             onPressedClear: () => clearData(),
             onPressedSave: () {
               AppManager().saveData(
