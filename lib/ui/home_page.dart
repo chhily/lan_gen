@@ -27,6 +27,7 @@ class _HomePageState extends State<HomePage> {
       excelFilePathController;
 
   String? filePath;
+  String? fileName;
   Map<String, Map<String, String>> translations = {};
 
   ExportMode exportMode = ExportMode.overWrite;
@@ -108,11 +109,17 @@ class _HomePageState extends State<HomePage> {
         actions: [
           AppBarActionButton(
             onImportFile: () async {
-              final (value, value1) = await AppManager().pickSheetFile();
-              setState(() {
-                filePath = value;
-                excelFilePathController.value = value1;
-              });
+              final result = await AppManager().pickSheetFile();
+              if (result.files.isNotEmpty) {
+                setState(() {
+                  filePath = result.files.single.path;
+                  fileName = result.files.single.name;
+                  excelFilePathController.value = TextEditingValue(
+                    text: filePath ?? "",
+                  );
+                });
+              }
+
               translations =
                   await AppManager().getSheetData(filePath: filePath) ?? {};
             },
@@ -146,17 +153,17 @@ class _HomePageState extends State<HomePage> {
             useCamelCase: useCamelCase,
             onPressedClear: () => clearData(),
             onPressedSave: () {
-              if (!validateFilePath()) {
-                return;
-              }
               AppManager().saveData(
                 context,
-                name: "name",
+                name: fileName ?? "N/A",
                 excelFilePath: excelFilePathController.text.trim(),
                 savedTranslateFilePath: translateTextController.text.trim(),
                 savedLocaleKeyFilePath: localeKeyTextController.text.trim(),
                 loadProjectHistory: loadProjectHistory,
               );
+              if (!validateFilePath()) {
+                return;
+              }
             },
           ),
 

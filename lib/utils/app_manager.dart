@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lan_gen/services/excel_parser.dart';
 import '../models/translation_data.dart';
@@ -70,13 +71,10 @@ class AppManager {
         });
   }
 
-  Future<(String, TextEditingValue)> pickSheetFile() async {
+  Future<FilePickerResult> pickSheetFile() async {
     final result = await fileServices.pickExcelFile();
     if (result != null && result.files.single.path != null) {
-      return (
-        result.files.single.path!,
-        TextEditingValue(text: result.files.single.path!),
-      );
+      return result;
     }
     throw Exception("No file selected");
   }

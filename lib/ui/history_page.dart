@@ -3,6 +3,7 @@ import 'package:lan_gen/shared/app_colors.dart';
 import 'package:lan_gen/shared/themes/app_text_theme.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 import 'package:lan_gen/ui/home_page.dart';
+import 'package:lan_gen/utils/exportor_manager.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -32,23 +33,44 @@ class _HistoryPageState extends State<HistoryPage> {
                     return Card(
                       child: Padding(
                         padding: const EdgeInsets.all(8.0),
-                        child: Column(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            _buildText(
-                              title: "Project Name",
-                              value: itemValue?.name,
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  _buildText(
+                                    title: "Project Name",
+                                    value: itemValue?.name,
+                                  ),
+                                  _buildText(
+                                    title: "Excel Path",
+                                    value: itemValue?.excelFilePath,
+                                  ),
+                                  _buildText(
+                                    title: "Json Path",
+                                    value: itemValue?.savedTranslateFilePath,
+                                  ),
+                                  _buildText(
+                                    title: "Key Path",
+                                    value: itemValue?.savedLocaleKeyFilePath,
+                                  ),
+                                ],
+                              ),
                             ),
-                            _buildText(
-                              title: "Excel Path",
-                              value: itemValue?.excelFilePath,
-                            ),
-                            _buildText(
-                              title: "Json Path",
-                              value: itemValue?.savedTranslateFilePath,
-                            ),
-                            _buildText(
-                              title: "Key Path",
-                              value: itemValue?.savedLocaleKeyFilePath,
+                            AppSpace.x(),
+                            IconButton.filled(
+                              onPressed: () {
+                                ExportPathManager.deleteProject(
+                                  itemValue!,
+                                ).whenComplete(() {
+                                  translationNotifier.value?.remove(itemValue);
+                                });
+                              },
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.error,
+                              ),
+                              icon: Icon(Icons.delete_forever_rounded),
                             ),
                           ],
                         ),
