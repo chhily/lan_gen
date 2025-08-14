@@ -6,10 +6,11 @@ import 'package:lan_gen/services/excel_parser.dart';
 import 'package:lan_gen/services/exportor.dart';
 import 'package:lan_gen/shared/widget/app_button.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
+import 'package:lan_gen/ui/app_bar_action_button.dart';
 import 'package:lan_gen/ui/input_path.dart';
+import 'package:lan_gen/utils/app_manager.dart';
 import 'package:lan_gen/utils/exportor_manager.dart';
 
-import '../services/file_services.dart';
 import '../shared/app_colors.dart';
 import 'duplicate_panel.dart';
 import 'translate_preview.dart';
@@ -32,105 +33,14 @@ class _HomePageState extends State<HomePage> {
   String? filePath;
   Map<String, Map<String, String>> translations = {};
 
-  FileServices fileServices = FileServices.i;
-
   ExportMode exportMode = ExportMode.overWrite;
 
   bool useCamelCase = false;
-
-  Future<void> pickSheetFile() async {
-    try {
-      final result = await fileServices.pickExcelFile();
-      if (result != null && result.files.single.path != null) {
-        setState(() {
-          filePath = result.files.single.path;
-          excelFilePathController.value = TextEditingValue(
-            text: result.files.single.path ?? "N/A",
-          );
-        });
-      }
-    } catch (e) {
-      debugPrint("$e");
-    }
-  }
-
-  Future<void> getSheetData() async {
-    try {
-      final result = await fileServices.readFile(path: filePath);
-      if (result.isNotEmpty) {
-        translations = ExcelParser.i.parseTranslation(result);
-      }
-    } catch (e) {
-      debugPrint("$e");
-    }
-  }
-
-  void exportTranslations() {
-    try {
-      switch (exportMode) {
-        case ExportMode.overWrite:
-          Exportor.i.exportTranslations(
-            translations,
-            useCamelCase: useCamelCase,
-          );
-        case ExportMode.merge:
-          Exportor.i.exportWithMerged(
-            translations: translations,
-            useCamelCase: useCamelCase,
-          );
-      }
-      onShowSnackBar("Success!");
-    } catch (e) {
-      onShowSnackBar("Error : $e");
-    }
-  }
-
-  void generateTranslations() {
-    try {
-      switch (exportMode) {
-        case ExportMode.overWrite:
-          Exportor.i.exportTranslations(
-            translations,
-            userDir: translateTextController.text,
-            useCamelCase: useCamelCase,
-            userLocaleKeyDir: localeKeyTextController.text,
-          );
-        case ExportMode.merge:
-          Exportor.i.exportWithMerged(
-            translations: translations,
-            useCamelCase: useCamelCase,
-            userDir: translateTextController.text,
-            userLocaleKeyDir: localeKeyTextController.text,
-          );
-      }
-      onShowSnackBar("Success!");
-    } catch (e) {
-      onShowSnackBar("Error : $e");
-    }
-  }
 
   bool validateFilePath() {
     return excelFilePathController.text.isNotEmpty &&
         translateTextController.text.isNotEmpty &&
         localeKeyTextController.text.isNotEmpty;
-  }
-
-  Future<void> saveData() async {
-    await ExportPathManager.saveTranslation(
-          TranslationData(
-            name: "name",
-            excelFilePath: excelFilePathController.text.trim(),
-            savedTranslateFilePath: translateTextController.text.trim(),
-            savedLocaleKeyFilePath: localeKeyTextController.text.trim(),
-          ),
-        )
-        .whenComplete(() async {
-          await loadProjectHistory();
-        })
-        .onError((error, stackTrace) {
-          onShowSnackBar("Failed to save data!");
-          print(error);
-        });
   }
 
   Future<void> loadProjectHistory() async {
@@ -179,50 +89,10 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        centerTitle: false,
+        title: Text("Aoi.dev"),
+        actions: [AppBarActionButton()],
         toolbarHeight: kToolbarHeight + 12,
-        flexibleSpace: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Row(
-            children: [
-              ToggleButtons(
-                isSelected: [
-                  exportMode == ExportMode.overWrite,
-                  exportMode == ExportMode.merge,
-                ],
-                onPressed: (index) {
-                  setState(() {
-                    exportMode = ExportMode.values[index];
-                  });
-                },
-                children: const [
-                  Padding(padding: EdgeInsets.all(8), child: Text("OVERWRITE")),
-                  Padding(padding: EdgeInsets.all(8), child: Text("MERGE")),
-                ],
-              ),
-              AppSpace.x(),
-              ToggleButtons(
-                onPressed: (index) {
-                  setState(() {
-                    useCamelCase = !useCamelCase;
-                  });
-                },
-                isSelected: [useCamelCase == true],
-                children: [
-                  Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Text("USE CAMELCASE"),
-                  ),
-                ],
-              ),
-
-              Spacer(),
-              Text(
-                "aoi.dev",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
       ),
       body: ListView(
         padding: EdgeInsets.all(12),
@@ -279,11 +149,20 @@ class _HomePageState extends State<HomePage> {
 
                     AppButton(
                       text: "CHOSE EXCEL FILE",
-                      background: AppColors.secondaryDark,
+                      background: AppColors.primary,
                       icon: Icons.file_upload_rounded,
                       onPressed: () async {
-                        await pickSheetFile();
-                        await getSheetData();
+                        final (value, value1) = await AppManager()
+                            .pickSheetFile();
+                        setState(() {
+                          filePath = value;
+                          excelFilePathController.value = value1;
+                        });
+                        translations =
+                            await AppManager().getSheetData(
+                              filePath: filePath,
+                            ) ??
+                            {};
                       },
                     ),
 
@@ -317,7 +196,11 @@ class _HomePageState extends State<HomePage> {
                           child: AppButton(
                             text: "EXPORT",
                             icon: Icons.file_download_rounded,
-                            onPressed: () => exportTranslations(),
+                            onPressed: () => AppManager().exportTranslations(
+                              translations,
+                              context,
+                              exportMode: exportMode,
+                            ),
                           ),
                         ),
                         AppSpace.x(),
@@ -331,7 +214,15 @@ class _HomePageState extends State<HomePage> {
                                 onShowSnackBar("Path cannot be empty!");
                                 return;
                               }
-                              generateTranslations();
+                              AppManager().exportTranslations(
+                                translations,
+                                context,
+                                exportMode: exportMode,
+                                useCamelCase: useCamelCase,
+                                userDir: translateTextController.text.trim(),
+                                userLocaleKeyDir: localeKeyTextController.text
+                                    .trim(),
+                              );
                             },
                           ),
                         ),
@@ -355,13 +246,25 @@ class _HomePageState extends State<HomePage> {
                             text: "Save",
                             icon: Icons.shopping_cart_rounded,
                             onPressed: () {
-                              saveData();
-
                               if (!validateFilePath()) {
                                 return;
                               }
+
+                              AppManager().saveData(
+                                context,
+                                name: "name",
+                                excelFilePath: excelFilePathController.text
+                                    .trim(),
+                                savedTranslateFilePath: translateTextController
+                                    .text
+                                    .trim(),
+                                savedLocaleKeyFilePath: localeKeyTextController
+                                    .text
+                                    .trim(),
+                                loadProjectHistory: loadProjectHistory,
+                              );
                             },
-                            background: AppColors.primaryDark,
+                            background: AppColors.primary,
                           ),
                         ),
                       ],

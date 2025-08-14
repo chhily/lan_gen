@@ -39,7 +39,6 @@ class TranslationPreview extends StatelessWidget {
         rows: [
           for (final key in keys)
             DataRow(
-              color: WidgetStatePropertyAll(AppColors.shadeDark),
               cells: [
                 DataCell(
                   Text(
