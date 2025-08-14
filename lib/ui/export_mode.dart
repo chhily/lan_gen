@@ -72,14 +72,14 @@ class _ExportModeWidgetState extends State<ExportModeWidget> {
             Text("<KEY MODES/>"),
             AppSpace.y(y: AppDimensions.sm),
             ValueListenableBuilder(
-              valueListenable: useCamelCaseNotifer,
+              valueListenable: useCamelCaseNotifier,
               builder: (context, value, child) {
                 return ToggleButtons(
                   selectedColor: AppColors.success,
 
                   onPressed: (index) {
                     setState(() {
-                      useCamelCaseNotifer.value = !value;
+                      useCamelCaseNotifier.value = !value;
                     });
                   },
                   isSelected: [value == true],

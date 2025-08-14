@@ -22,7 +22,7 @@ class _HistoryPageState extends State<HistoryPage> {
           Text("<HISTORY/>", style: appTextTheme.headlineSmall),
           Expanded(
             child: ValueListenableBuilder(
-              valueListenable: translationNotifier,
+              valueListenable: translationHistoryNotifier,
               builder: (context, value, child) {
                 return ListView.separated(
                   padding: EdgeInsets.all(12),
@@ -65,7 +65,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                   itemValue!,
                                 ).whenComplete(() {
                                   setState(() {
-                                    translationNotifier.value?.remove(
+                                    translationHistoryNotifier.value?.remove(
                                       itemValue,
                                     );
                                   });

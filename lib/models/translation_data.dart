@@ -22,4 +22,22 @@ class TranslationData {
     required this.savedLocaleKeyFilePath,
     this.timeStamps,
   });
+
+  TranslationData copyWith({
+    String? name,
+    String? excelFilePath,
+    String? savedTranslateFilePath,
+    String? savedLocaleKeyFilePath,
+    int? timeStamps,
+  }) {
+    return TranslationData(
+      name: name ?? this.name,
+      excelFilePath: excelFilePath ?? this.excelFilePath,
+      savedTranslateFilePath:
+          savedTranslateFilePath ?? this.savedTranslateFilePath,
+      savedLocaleKeyFilePath:
+          savedLocaleKeyFilePath ?? this.savedLocaleKeyFilePath,
+      timeStamps: timeStamps ?? this.timeStamps,
+    );
+  }
 }
