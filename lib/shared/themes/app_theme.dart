@@ -42,7 +42,7 @@ class AppTheme {
           foregroundColor: AppColors.textPrimary,
           minimumSize: const Size(double.infinity, AppDimensions.buttonHeight),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+            borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
           ),
         ),
       ),

@@ -1,58 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:lan_gen/services/exportor.dart';
 import 'package:lan_gen/shared/app_colors.dart';
+import 'package:lan_gen/shared/widget/app_button.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 
-// ignore: must_be_immutable
-class AppBarActionButton extends StatefulWidget {
-  ExportMode exportMode;
-  bool useCamelCase;
-  AppBarActionButton({
+class AppBarActionButton extends StatelessWidget {
+  final void Function()? onImportFile;
+  final void Function()? onExportFile;
+  final void Function()? onOpenHistory;
+  const AppBarActionButton({
     super.key,
-    this.exportMode = ExportMode.overWrite,
-    this.useCamelCase = false,
+    this.onImportFile,
+    this.onExportFile,
+    this.onOpenHistory,
   });
 
-  @override
-  State<AppBarActionButton> createState() => _AppBarActionButtonState();
-}
-
-class _AppBarActionButtonState extends State<AppBarActionButton> {
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        ToggleButtons(
-          selectedColor: AppColors.success,
-          isSelected: [
-            widget.exportMode == ExportMode.overWrite,
-            widget.exportMode == ExportMode.merge,
-          ],
-          onPressed: (index) {
-            setState(() {
-              widget.exportMode = ExportMode.values[index];
-            });
-          },
-          children: const [
-            Padding(padding: EdgeInsets.all(8), child: Text("OVERWRITE")),
-            Padding(padding: EdgeInsets.all(8), child: Text("MERGE")),
-          ],
+        SizedBox(
+          width: 140,
+          child: AppButton(
+            text: "IMPORT",
+            background: AppColors.primary,
+            icon: Icons.file_upload_rounded,
+            onPressed: onImportFile,
+          ),
         ),
         AppSpace.x(),
-        ToggleButtons(
-          selectedColor: AppColors.success,
+        SizedBox(
+          width: 140,
 
-          onPressed: (index) {
-            setState(() {
-              widget.useCamelCase = !widget.useCamelCase;
-            });
-          },
-          isSelected: [widget.useCamelCase == true],
-          children: [
-            Padding(padding: EdgeInsets.all(8), child: Text("USE CAMELCASE")),
-          ],
+          child: AppButton(
+            text: "EXPORT",
+            icon: Icons.file_download_rounded,
+            onPressed: onExportFile,
+          ),
+        ),
+        AppSpace.x(),
+        IconButton.filled(
+          icon: Icon(Icons.history_rounded),
+          onPressed: onOpenHistory,
         ),
         AppSpace.x(),
       ],

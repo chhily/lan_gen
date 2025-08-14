@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lan_gen/shared/app_colors.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 
+import '../shared/app_dimensions.dart';
+
 class TranslationPreview extends StatelessWidget {
   final Map<String, Map<String, String>> translations;
 
@@ -26,39 +28,45 @@ class TranslationPreview extends StatelessWidget {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: DataTable(
-        border: TableBorder.all(color: AppColors.surface),
-        headingTextStyle: const TextStyle(fontWeight: FontWeight.bold),
-        dataRowMinHeight: 48,
-        columnSpacing: 24,
-        columns: [
-          const DataColumn(label: Text("Key")),
-          for (final lang in languages)
-            DataColumn(label: Text(lang.toUpperCase())),
-        ],
-        rows: [
-          for (final key in keys)
-            DataRow(
-              cells: [
-                DataCell(
-                  Text(
-                    key,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ),
-                for (final lang in languages)
-                  DataCell(
-                    Text(
-                      translations[lang]?[key] ?? "",
-                      style: TextStyle(
-                        color: (translations[lang]?[key]?.isEmpty ?? true)
-                            ? AppColors.error
-                            : null,
+      child: Column(
+        children: [
+          Text("<PREVIEW TABLE/>"),
+          AppSpace.y(y: AppDimensions.sm),
+          DataTable(
+            headingRowColor: WidgetStatePropertyAll(AppColors.surface),
+            border: TableBorder.all(color: AppColors.border),
+            headingTextStyle: const TextStyle(fontWeight: FontWeight.bold),
+            dataRowMinHeight: 48,
+            columnSpacing: 24,
+            columns: [
+              const DataColumn(label: Text("Key")),
+              for (final lang in languages) DataColumn(label: Text(lang)),
+            ],
+            rows: [
+              for (final key in keys)
+                DataRow(
+                  cells: [
+                    DataCell(
+                      Text(
+                        key,
+                        style: const TextStyle(fontWeight: FontWeight.w500),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                    for (final lang in languages)
+                      DataCell(
+                        Text(
+                          translations[lang]?[key] ?? "",
+                          style: TextStyle(
+                            color: (translations[lang]?[key]?.isEmpty ?? true)
+                                ? AppColors.error
+                                : null,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+            ],
+          ),
         ],
       ),
     );

@@ -27,7 +27,7 @@ class AppDimensions {
 
   // Card Dimensions
   static const double cardRadius = 12.0;
-  static const double cardElevation = 2.0;
+  static const double cardElevation = 0.0;
 
   // App Bar
   static const double appBarHeight = 56.0;

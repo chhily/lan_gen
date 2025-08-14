@@ -98,7 +98,7 @@ class AppManager {
 
   void showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: Durations.medium1),
+      SnackBar(content: Text(message), duration: Durations.medium4),
     );
   }
 }
