@@ -41,6 +41,22 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   Map<String, Map<String, String>> translations = {};
 
+  Future<void> setSelectedSheetData(TranslationData? selectedValue) async {
+    if (selectedValue == null) return;
+    translations =
+        await AppManager().getSheetData(
+          filePath: selectedValue.excelFilePath,
+        ) ??
+        {};
+    translationData.value = translationData.value.copyWith(
+      name: selectedValue.name,
+      excelFilePath: selectedValue.excelFilePath,
+      savedTranslateFilePath: selectedValue.savedTranslateFilePath,
+      savedLocaleKeyFilePath: selectedValue.savedLocaleKeyFilePath,
+    );
+    setState(() {});
+  }
+
   Future<void> importFile() async {
     final result = await AppManager().pickSheetFile();
     if (result?.files.isNotEmpty ?? false) {
@@ -191,9 +207,13 @@ class _HomePageState extends State<HomePage> {
               showDialog(
                 context: context,
                 builder: (context) {
-                  return const Padding(
+                  return  Padding(
                     padding: EdgeInsets.all(80.0),
-                    child: HistoryPage(),
+                    child: HistoryPage(
+                      onSelectSheet: (value) {
+                        setSelectedSheetData(value);
+                      },
+                    ),
                   );
                 },
               );

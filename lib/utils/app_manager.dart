@@ -103,6 +103,9 @@ class AppManager {
     return null;
   }
 
+
+
+
   void showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(
       context,

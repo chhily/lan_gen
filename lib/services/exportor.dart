@@ -25,7 +25,7 @@ class Exportor {
       // Ask user for directory if not provided
       String? outputDir =
           userDir ?? await FilePicker.platform.getDirectoryPath();
-      print("userDir ${userDir}");
+      print("userDir $userDir");
       if (outputDir == null || outputDir.isEmpty) {
         throw Exception("No output directory selected.");
       }
