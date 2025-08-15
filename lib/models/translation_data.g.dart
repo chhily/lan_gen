@@ -22,13 +22,15 @@ class TranslationDataAdapter extends TypeAdapter<TranslationData> {
       savedTranslateFilePath: fields[2] as String,
       savedLocaleKeyFilePath: fields[3] as String,
       timeStamps: fields[4] as int?,
+      translationsSheet: (fields[5] as Map?)?.map((dynamic k, dynamic v) =>
+          MapEntry(k as String, (v as Map).cast<String, String>())),
     );
   }
 
   @override
   void write(BinaryWriter writer, TranslationData obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -38,7 +40,9 @@ class TranslationDataAdapter extends TypeAdapter<TranslationData> {
       ..writeByte(3)
       ..write(obj.savedLocaleKeyFilePath)
       ..writeByte(4)
-      ..write(obj.timeStamps);
+      ..write(obj.timeStamps)
+      ..writeByte(5)
+      ..write(obj.translationsSheet);
   }
 
   @override

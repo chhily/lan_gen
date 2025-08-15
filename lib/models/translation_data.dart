@@ -6,14 +6,21 @@ part 'translation_data.g.dart';
 class TranslationData {
   @HiveField(0)
   final String name;
+
   @HiveField(1)
   final String excelFilePath;
+
   @HiveField(2)
   final String savedTranslateFilePath;
+
   @HiveField(3)
   final String savedLocaleKeyFilePath;
+
   @HiveField(4)
   final int? timeStamps;
+
+  @HiveField(5)
+  final Map<String, Map<String, String>>? translationsSheet;
 
   TranslationData({
     required this.name,
@@ -21,6 +28,7 @@ class TranslationData {
     required this.savedTranslateFilePath,
     required this.savedLocaleKeyFilePath,
     this.timeStamps,
+    required this.translationsSheet,
   });
 
   TranslationData copyWith({
@@ -29,6 +37,7 @@ class TranslationData {
     String? savedTranslateFilePath,
     String? savedLocaleKeyFilePath,
     int? timeStamps,
+    Map<String, Map<String, String>>? translationsSheet,
   }) {
     return TranslationData(
       name: name ?? this.name,
@@ -38,6 +47,7 @@ class TranslationData {
       savedLocaleKeyFilePath:
           savedLocaleKeyFilePath ?? this.savedLocaleKeyFilePath,
       timeStamps: timeStamps ?? this.timeStamps,
+      translationsSheet: translationsSheet ?? this.translationsSheet,
     );
   }
 }

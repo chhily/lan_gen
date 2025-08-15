@@ -28,6 +28,7 @@ ValueNotifier<TranslationData> translationData = ValueNotifier<TranslationData>(
     excelFilePath: '',
     savedTranslateFilePath: '',
     savedLocaleKeyFilePath: '',
+    translationsSheet: {}
   ),
 );
 
@@ -39,20 +40,18 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Map<String, Map<String, String>> translations = {};
+  AppManager appManager = AppManager();
 
   Future<void> setSelectedSheetData(TranslationData? selectedValue) async {
     if (selectedValue == null) return;
-    translations =
-        await AppManager().getSheetData(
-          filePath: selectedValue.excelFilePath,
-        ) ??
-        {};
+
+    final result = await AppManager().getSheetData(filePath: selectedValue.excelFilePath);
     translationData.value = translationData.value.copyWith(
       name: selectedValue.name,
       excelFilePath: selectedValue.excelFilePath,
       savedTranslateFilePath: selectedValue.savedTranslateFilePath,
       savedLocaleKeyFilePath: selectedValue.savedLocaleKeyFilePath,
+      translationsSheet:  result
     );
     setState(() {});
   }
@@ -60,13 +59,16 @@ class _HomePageState extends State<HomePage> {
   Future<void> importFile() async {
     final result = await AppManager().pickSheetFile();
     if (result?.files.isNotEmpty ?? false) {
+
       final file = result!.files.single;
+      final sheetData = await AppManager().getSheetData(filePath: file.path);
+
       translationData.value = translationData.value.copyWith(
         name: file.name,
         excelFilePath: file.path,
+        translationsSheet: sheetData
       );
 
-      translations = await AppManager().getSheetData(filePath: file.path) ?? {};
       setState(() {});
     }
   }
@@ -84,9 +86,9 @@ class _HomePageState extends State<HomePage> {
       excelFilePath: '',
       savedTranslateFilePath: '',
       savedLocaleKeyFilePath: '',
+      translationsSheet: {},
     );
     ExcelParser.i.duplicateRecord.clear();
-    translations.clear();
     onShowSnackBar("Cleared!");
   }
 
@@ -111,7 +113,7 @@ class _HomePageState extends State<HomePage> {
     );
     if (validateTranslationData()) {
       AppManager().exportTranslations(
-        translations,
+        data.translationsSheet,
         context,
         exportMode: exportNotifier.value,
         useCamelCase: useCamelCaseNotifier.value,
@@ -137,7 +139,7 @@ class _HomePageState extends State<HomePage> {
                     ? () {
                         if (validateTranslationData()) {
                           AppManager().exportTranslations(
-                            translations,
+                            value.translationsSheet,
                             context,
                             exportMode: exportNotifier.value,
                             useCamelCase: useCamelCaseNotifier.value,
@@ -196,7 +198,7 @@ class _HomePageState extends State<HomePage> {
             onExportFile: isHasFile()
                 ? () {
                     AppManager().exportTranslations(
-                      translations,
+                     translationData.value.translationsSheet,
                       context,
                       exportMode: exportNotifier.value,
                       useCamelCase: useCamelCaseNotifier.value,
@@ -207,7 +209,7 @@ class _HomePageState extends State<HomePage> {
               showDialog(
                 context: context,
                 builder: (context) {
-                  return  Padding(
+                  return Padding(
                     padding: EdgeInsets.all(80.0),
                     child: HistoryPage(
                       onSelectSheet: (value) {
@@ -256,12 +258,17 @@ class _HomePageState extends State<HomePage> {
           Builder(
             builder: (context) {
               return Center(
-                child: TranslationPreview(
-                  translations: translations,
-                  duplicates: ExcelParser.i.duplicateRecord.length,
-                  onPressed: () {
-                    Scaffold.of(context).openDrawer();
-                  },
+                child: ValueListenableBuilder(
+                  valueListenable: translationData,
+                  builder: (context, value, child) {
+                    return TranslationPreview(
+                      translations: value.translationsSheet ?? {},
+                      duplicates: ExcelParser.i.duplicateRecord.length,
+                      onPressed: () {
+                        Scaffold.of(context).openDrawer();
+                      },
+                    );
+                  }
                 ),
               );
             },

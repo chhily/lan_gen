@@ -1,11 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:lan_gen/shared/app_colors.dart';
 import 'package:lan_gen/shared/themes/app_text_theme.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
+import 'package:lan_gen/utils/app_manager.dart';
 
 import '../shared/app_dimensions.dart';
+import 'home_page.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:path/path.dart' as p;
 
-class TranslationPreview extends StatelessWidget {
+class TranslationPreview extends StatefulWidget {
   final Map<String, Map<String, String>> translations;
   final int? duplicates;
   final void Function()? onPressed;
@@ -18,21 +24,72 @@ class TranslationPreview extends StatelessWidget {
   });
 
   @override
+  State<TranslationPreview> createState() => _TranslationPreviewState();
+}
+
+class _TranslationPreviewState extends State<TranslationPreview> {
+  bool _dragging = false;
+
+  Future<void> _handleFileDrop(List<dynamic> files) async {
+    if (files.isEmpty) return;
+
+    final file = File(files.first.path);
+    if (file.path.endsWith(".xlsx") || file.path.endsWith(".xls")) {
+      final sheetData = await AppManager().getSheetData(filePath: file.path);
+      final fileName = p.basename(file.path);
+      translationData.value = translationData.value.copyWith(
+        excelFilePath: file.path,
+        translationsSheet: sheetData,
+        name: fileName,
+      );
+
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Only Excel files (.xlsx / .xls) allowed")),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (translations.isEmpty) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
+    if (widget.translations.isEmpty) {
+      return Column(
         children: [
-          Icon(Icons.warning_rounded),
-          AppSpace.x(),
-          Text("No data to preview"),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.warning_rounded),
+              AppSpace.x(),
+              Text("No data to preview"),
+            ],
+          ),
+          AppSpace.y(y: 32),
+          DropTarget(
+            onDragEntered: (_) => setState(() => _dragging = true),
+            onDragExited: (_) => setState(() => _dragging = false),
+            onDragDone: (detail) => _handleFileDrop(detail.files),
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.5,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: _dragging ? AppColors.success : AppColors.border,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
+                color: _dragging
+                    ? AppColors.success.withOpacity(0.1)
+                    : AppColors.secondary,
+              ),
+              child: Center(child: Text("IMPORT OR DRAG FILE HERE")),
+            ),
+          ),
         ],
       );
     }
 
-    final languages = translations.keys.toList();
-    final keys = translations[languages.first]!.keys.toList();
+    final languages = widget.translations.keys.toList();
+    final keys = widget.translations[languages.first]!.keys.toList();
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -42,16 +99,16 @@ class TranslationPreview extends StatelessWidget {
             message:
                 "Automatically flags duplicate keys within each language to prevent errors",
             child: Badge(
-              isLabelVisible: duplicates != null,
+              isLabelVisible: widget.duplicates != null,
               offset: Offset(-16, -12),
               backgroundColor: AppColors.warning,
               label: Padding(
                 padding: const EdgeInsets.all(2.0),
-                child: Text("Duplicated $duplicates"),
+                child: Text("Duplicated ${widget.duplicates}"),
               ),
               child: TextButton(
-                onPressed: onPressed,
-                style: duplicates != null
+                onPressed: widget.onPressed,
+                style: widget.duplicates != null
                     ? TextButton.styleFrom(
                         side: BorderSide(color: AppColors.border),
                       )
@@ -86,9 +143,11 @@ class TranslationPreview extends StatelessWidget {
                     for (final lang in languages)
                       DataCell(
                         Text(
-                          translations[lang]?[key] ?? "",
+                          widget.translations[lang]?[key] ?? "",
                           style: appTextTheme.bodyMedium?.copyWith(
-                            color: (translations[lang]?[key]?.isEmpty ?? true)
+                            color:
+                                (widget.translations[lang]?[key]?.isEmpty ??
+                                    true)
                                 ? AppColors.error
                                 : AppColors.textPrimary,
                           ),
