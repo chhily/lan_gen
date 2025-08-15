@@ -16,10 +16,12 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("<HISTORY/>", style: appTextTheme.headlineSmall),
+        automaticallyImplyLeading: false,
+      ),
       body: Column(
         children: [
-          AppSpace.y(),
-          Text("<HISTORY/>", style: appTextTheme.headlineSmall),
           Expanded(
             child: ValueListenableBuilder(
               valueListenable: translationHistoryNotifier,

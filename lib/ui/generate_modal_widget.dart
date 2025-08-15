@@ -5,16 +5,16 @@ import 'package:lan_gen/shared/widget/app_button.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 import 'package:lan_gen/ui/home_page.dart';
 
-class InputPath extends StatefulWidget {
+class GenerateModalWidget extends StatefulWidget {
   final void Function()? onPressed;
   final void Function()? onPressedImport;
-  const InputPath({super.key, this.onPressed, this.onPressedImport});
+  const GenerateModalWidget({super.key, this.onPressed, this.onPressedImport});
 
   @override
-  State<InputPath> createState() => _InputPathState();
+  State<GenerateModalWidget> createState() => _GenerateModalWidgetState();
 }
 
-class _InputPathState extends State<InputPath> {
+class _GenerateModalWidgetState extends State<GenerateModalWidget> {
   late TextEditingController translateTextController;
   late TextEditingController localeKeyTextController;
 
@@ -37,8 +37,8 @@ class _InputPathState extends State<InputPath> {
   void _updateControllers() {
     final data = translationData.value;
     // Only update if values are different to avoid cursor jump
-    if (translateTextController.text != data.savedLocaleKeyFilePath) {
-      translateTextController.text = data.savedLocaleKeyFilePath;
+    if (translateTextController.text != data.savedTranslateFilePath) {
+      translateTextController.text = data.savedTranslateFilePath;
     }
     if (localeKeyTextController.text != data.savedLocaleKeyFilePath) {
       localeKeyTextController.text = data.savedLocaleKeyFilePath;
@@ -58,7 +58,7 @@ class _InputPathState extends State<InputPath> {
     return Scaffold(
       persistentFooterButtons: [
         AppButton(
-          text: "GENERATE",
+          text: "GENERATE/SAVE",
           onPressed: widget.onPressed,
           background: AppColors.success,
         ),
@@ -95,6 +95,7 @@ class _InputPathState extends State<InputPath> {
                       ),
                       IconButton.filled(
                         onPressed: widget.onPressedImport,
+
                         style: IconButton.styleFrom(
                           backgroundColor: AppColors.info,
                         ),
@@ -106,15 +107,27 @@ class _InputPathState extends State<InputPath> {
               ),
             ),
             AppSpace.y(),
+
             TextFormField(
               cursorColor: AppColors.textPrimary,
+              selectionControls: MaterialTextSelectionControls(),
               controller: translateTextController,
+              onChanged: (value) {
+                translationData.value = translationData.value.copyWith(
+                  savedTranslateFilePath: value,
+                );
+              },
               decoration: const InputDecoration(labelText: "Translation path"),
             ),
             AppSpace.y(),
             TextFormField(
               cursorColor: AppColors.textPrimary,
               controller: localeKeyTextController,
+              onChanged: (value) {
+                translationData.value = translationData.value.copyWith(
+                  savedLocaleKeyFilePath: value,
+                );
+              },
               decoration: const InputDecoration(labelText: "Locale Keys path"),
             ),
             const Padding(

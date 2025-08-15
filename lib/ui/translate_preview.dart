@@ -7,8 +7,15 @@ import '../shared/app_dimensions.dart';
 
 class TranslationPreview extends StatelessWidget {
   final Map<String, Map<String, String>> translations;
+  final int? duplicates;
+  final void Function()? onPressed;
 
-  const TranslationPreview({super.key, required this.translations});
+  const TranslationPreview({
+    super.key,
+    required this.translations,
+    required this.duplicates,
+    this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +38,28 @@ class TranslationPreview extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Column(
         children: [
-          Text("<PREVIEW TABLE/>"),
+          Tooltip(
+            message:
+                "Automatically flags duplicate keys within each language to prevent errors",
+            child: Badge(
+              isLabelVisible: duplicates != null,
+              offset: Offset(-16, -12),
+              backgroundColor: AppColors.warning,
+              label: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: Text("Duplicated $duplicates"),
+              ),
+              child: TextButton(
+                onPressed: onPressed,
+                style: duplicates != null
+                    ? TextButton.styleFrom(
+                        side: BorderSide(color: AppColors.border),
+                      )
+                    : null,
+                child: Text("<PREVIEW TABLE/>"),
+              ),
+            ),
+          ),
           AppSpace.y(y: AppDimensions.sm),
           DataTable(
             headingRowColor: WidgetStatePropertyAll(AppColors.surface),

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:lan_gen/models/duplicate_record.dart';
 
 class ExcelParser {
@@ -10,9 +9,10 @@ class ExcelParser {
   List<DuplicateRecord> duplicateRecord = [];
 
   Map<String, Map<String, String>> parseTranslation(List<List<dynamic>> rows) {
+    duplicateRecord.clear();
     if (rows.isEmpty) return {};
 
-    final headers = rows.first.map((e) => e.toString()).toList();
+    final headers = rows.first.map((e) => e.toString().trim()).toList();
     final keyIndex = 0;
 
     final Map<String, Map<String, String>> translations = {};
@@ -22,7 +22,8 @@ class ExcelParser {
       translations[headers[col]] = {};
     }
 
-    for (final row in rows.skip(1)) {
+    for (int rowIndex = 1; rowIndex < rows.length; rowIndex++) {
+      final row = rows[rowIndex];
       if (row.isEmpty) continue;
 
       final key = row[keyIndex]?.toString() ?? '';
@@ -40,6 +41,7 @@ class ExcelParser {
               key: key,
               oldValue: translations[lang]![key]!,
               newValue: value,
+              rowNumber: rowIndex + 1, // Excel rows are 1-indexed
             ),
           );
         }

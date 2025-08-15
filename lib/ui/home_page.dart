@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:lan_gen/models/translation_data.dart';
 import 'package:lan_gen/services/excel_parser.dart';
 import 'package:lan_gen/services/exportor.dart';
+import 'package:lan_gen/shared/widget/app_space.dart';
 import 'package:lan_gen/ui/app_bar_action_button.dart';
+import 'package:lan_gen/ui/duplicate_modal.dart';
 import 'package:lan_gen/ui/export_mode.dart';
 import 'package:lan_gen/ui/history_page.dart';
-import 'package:lan_gen/ui/input_path.dart';
+import 'package:lan_gen/ui/generate_modal_widget.dart';
 import 'package:lan_gen/utils/app_manager.dart';
 import 'package:lan_gen/utils/storage_manager.dart';
 
@@ -49,11 +51,8 @@ class _HomePageState extends State<HomePage> {
       );
 
       translations = await AppManager().getSheetData(filePath: file.path) ?? {};
+      setState(() {});
     }
-  }
-
-  bool validateFilePath() {
-    return translationData.value.excelFilePath.isNotEmpty;
   }
 
   Future<void> loadProjectHistory() async {
@@ -85,35 +84,67 @@ class _HomePageState extends State<HomePage> {
 
   bool validateTranslationData() {
     final data = translationData.value;
-    return data.excelFilePath.isNotEmpty == true &&
-        data.savedLocaleKeyFilePath.isNotEmpty == true &&
-        data.savedTranslateFilePath.isNotEmpty == true;
+    return data.excelFilePath.isNotEmpty &&
+        data.savedLocaleKeyFilePath.isNotEmpty &&
+        data.savedTranslateFilePath.isNotEmpty;
   }
 
-  void onShowCustomPath() {
+  void onGenerateFile(TranslationData data) {
+    debugPrint(
+      "path : ${data.savedTranslateFilePath.trim()} ${data.savedLocaleKeyFilePath}",
+    );
+    if (validateTranslationData()) {
+      AppManager().exportTranslations(
+        translations,
+        context,
+        exportMode: exportNotifier.value,
+        useCamelCase: useCamelCaseNotifier.value,
+        userDir: data.savedTranslateFilePath.trim(),
+        userLocaleKeyDir: data.savedLocaleKeyFilePath.trim(),
+      );
+    } else {
+      onSetCustomPath();
+    }
+  }
+
+  void onSetCustomPath() {
     showDialog(
       context: context,
       builder: (context) {
         return Padding(
           padding: const EdgeInsets.all(120.0),
-          child: InputPath(
-            onPressed: validateFilePath()
-                ? () {
-                    AppManager().exportTranslations(
-                      translations,
-                      context,
-                      exportMode: exportNotifier.value,
-                      useCamelCase: useCamelCaseNotifier.value,
-                      userDir: translationData.value.savedTranslateFilePath
-                          .trim(),
-                      userLocaleKeyDir: translationData
-                          .value
-                          .savedLocaleKeyFilePath
-                          .trim(),
-                    );
-                  }
-                : null,
-            onPressedImport: () => importFile(),
+          child: ValueListenableBuilder(
+            valueListenable: translationData,
+            builder: (context, value, child) {
+              return GenerateModalWidget(
+                onPressed: validateTranslationData()
+                    ? () {
+                        if (validateTranslationData()) {
+                          AppManager().exportTranslations(
+                            translations,
+                            context,
+                            exportMode: exportNotifier.value,
+                            useCamelCase: useCamelCaseNotifier.value,
+                            userDir: value.savedTranslateFilePath.trim(),
+                            userLocaleKeyDir: value.savedLocaleKeyFilePath
+                                .trim(),
+                          );
+                          AppManager().saveData(
+                            context,
+                            name: value.name,
+                            excelFilePath: value.excelFilePath.trim(),
+                            savedTranslateFilePath: value.savedTranslateFilePath
+                                .trim(),
+                            savedLocaleKeyFilePath: value.savedLocaleKeyFilePath
+                                .trim(),
+                            loadProjectHistory: loadProjectHistory,
+                          );
+                        }
+                      }
+                    : null,
+                onPressedImport: () => importFile(),
+              );
+            },
           ),
         );
       },
@@ -130,16 +161,22 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: onShowCustomPath,
+        onPressed: () => onGenerateFile(translationData.value),
         icon: const Icon(Icons.autorenew_rounded),
         label: const Text("GENERATE"),
+      ),
+      drawer: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.5,
+        child: DuplicateModal(duplicateRecord: ExcelParser.i.duplicateRecord),
       ),
       appBar: AppBar(
         centerTitle: false,
         title: const Text("Aoi.dev"),
+        leading: SizedBox(),
+        leadingWidth: 0,
         actions: [
           AppBarActionButton(
-            onImportFile: importFile,
+            onImportFile: () => importFile(),
             onExportFile: isHasFile()
                 ? () {
                     AppManager().exportTranslations(
@@ -172,7 +209,9 @@ class _HomePageState extends State<HomePage> {
             builder: (context, data, _) {
               return ExportModeWidget(
                 projectName: data.name,
-                onPressedClear: clearData,
+                onPressedClear: () => setState(() {
+                  clearData();
+                }),
                 onPressedSave: () {
                   if (validateTranslationData()) {
                     AppManager().saveData(
@@ -185,13 +224,28 @@ class _HomePageState extends State<HomePage> {
                           .trim(),
                       loadProjectHistory: loadProjectHistory,
                     );
+                    return;
                   }
                 },
+                onSetPath: () => onSetCustomPath(),
               );
             },
           ),
-          const SizedBox(height: 20),
-          Center(child: TranslationPreview(translations: translations)),
+          AppSpace.y(y: 20),
+
+          Builder(
+            builder: (context) {
+              return Center(
+                child: TranslationPreview(
+                  translations: translations,
+                  duplicates: ExcelParser.i.duplicateRecord.length,
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                ),
+              );
+            },
+          ),
         ],
       ),
     );

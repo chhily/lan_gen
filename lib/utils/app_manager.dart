@@ -36,11 +36,12 @@ class AppManager {
 
         case ExportMode.merge:
           Exportor.i
-              .exportWithMerged(
-                translations: translations,
+              .exportTranslations(
+                translations,
                 useCamelCase: useCamelCase,
                 userDir: userDir,
                 userLocaleKeyDir: userLocaleKeyDir,
+                merge: true,
               )
               .whenComplete(() {
                 if (!context.mounted) return;
