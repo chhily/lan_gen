@@ -44,7 +44,7 @@ class AppBarActionButton extends StatelessWidget {
           icon: Icon(Icons.history_rounded),
           onPressed: onOpenHistory,
         ),
-        AppSpace.x(),
+        AppSpace.x(x: 12),
       ],
     );
   }

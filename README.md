@@ -2,6 +2,13 @@
 
 A powerful desktop tool designed to streamline localization for your Flutter projects. Generate JSON files for the `easy_localization` package directly from a single Excel file, eliminating manual editing and saving you valuable development time.
 
+## Demo
+
+<div style="text-align:center; width: 100%;">
+    <img src="assets/screenshot/home.png" width="895" height="725" align="center" alt="">
+</div>
+
+
 ## 🚀 Key Features
 
 * **📂 Direct Excel Import**: Instantly load all your app's translations from a single `.xlsx` file.

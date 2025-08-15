@@ -12,12 +12,14 @@ class ExportModeWidget extends StatefulWidget {
   final String? projectName;
   final void Function()? onPressedClear;
   final void Function()? onPressedSave;
+  final void Function()? onSetPath;
 
   const ExportModeWidget({
     super.key,
     this.projectName,
     this.onPressedClear,
     this.onPressedSave,
+    this.onSetPath,
   });
 
   @override
@@ -94,44 +96,65 @@ class _ExportModeWidgetState extends State<ExportModeWidget> {
             ),
           ],
         ),
-        Spacer(),
-
-        Expanded(
-          child: Column(
-            children: [
-              Text(
-                "<${widget.projectName ?? ""}/>",
-                style: appTextTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+        AppSpace.x(),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text("<Custom Path/>"),
+            AppSpace.y(y: AppDimensions.sm),
+            InkWell(
+              onTap: widget.onSetPath,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.borderDark),
+                ),
+                padding: EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                child: Text(
+                  "SET FILE PATH",
+                  style: appTextTheme.bodyMedium?.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
-              AppSpace.y(y: AppDimensions.sm),
-              Row(
-                children: [
-                  Expanded(
-                    child: AppButton(
-                      text: "SAVE",
-                      fixedSize: Size.fromHeight(48),
-                      onPressed: isHasProject() ? widget.onPressedSave : null,
-                      background: AppColors.success,
-                    ),
-                  ),
-                  AppSpace.x(),
-
-                  Expanded(
-                    child: AppButton(
-                      text: "Clear",
-                      fixedSize: Size.fromHeight(48),
-                      icon: Icons.delete_forever_rounded,
-                      onPressed: isHasProject() ? widget.onPressedClear : null,
-                      background: AppColors.error,
-                    ),
-                  ),
-                ],
+            ),
+          ],
+        ),
+        Spacer(),
+        Column(
+          children: [
+            Text(
+              "<${widget.projectName ?? ""}/>",
+              style: appTextTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
-            ],
-          ),
+            ),
+            AppSpace.y(y: AppDimensions.sm),
+            Row(
+              children: [
+                SizedBox(
+                  width: 140,
+                  child: AppButton(
+                    text: "SAVE",
+                    fixedSize: Size.fromHeight(48),
+                    onPressed: isHasProject() ? widget.onPressedSave : null,
+                    background: AppColors.success,
+                  ),
+                ),
+                AppSpace.x(),
+                SizedBox(
+                  width: 140,
+                  child: AppButton(
+                    text: "Clear",
+                    fixedSize: Size.fromHeight(48),
+                    onPressed: isHasProject() ? widget.onPressedClear : null,
+                    background: AppColors.error,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );

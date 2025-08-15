@@ -13,59 +13,62 @@ class Exportor {
   static Exportor? _i;
   static Exportor get i => _i ??= Exportor._init();
 
-  Future<void> exportWithMerged({
-    required Map<String, Map<String, String>> translations,
-    String? userDir,
-    String? userLocaleKeyDir,
-    bool useCamelCase = false,
-  }) async {
-    try {
-      String? outputDir =
-          userDir ?? await FilePicker.platform.getDirectoryPath();
-      translations.forEach((lang, newMap) {
-        final filePath = '$outputDir/$lang.json';
-        final existingMap = ExcelParser.i.loadExistingJson(filePath);
-        final mergedMap = ExcelParser.i.mergTranslation(
-          existing: existingMap,
-          incoming: newMap,
-        );
-
-        File(
-          filePath,
-        ).writeAsStringSync(JsonEncoder.withIndent(' ').convert(mergedMap));
-      });
-
-      LocaleKeyGenerator.i.generateKeysFile(
-        translations: translations,
-        outputDir: userLocaleKeyDir ?? outputDir,
-        useCamelCase: useCamelCase,
-      );
-    } catch (e) {
-      rethrow;
-    }
-  }
-
+  /// Exports translations to JSON files and optionally generates locale keys
   Future<void> exportTranslations(
     Map<String, Map<String, String>> translations, {
     String? userDir,
     String? userLocaleKeyDir,
     bool useCamelCase = false,
+    bool merge = false,
   }) async {
     try {
+      // Ask user for directory if not provided
       String? outputDir =
           userDir ?? await FilePicker.platform.getDirectoryPath();
+      print("userDir $userDir");
+      if (outputDir == null || outputDir.isEmpty) {
+        throw Exception("No output directory selected.");
+      }
 
-      translations.forEach((lang, map) {
+      // Ensure the directory exists
+      final dir = Directory(outputDir);
+      if (!dir.existsSync()) {
+        dir.createSync(recursive: true);
+      }
+
+      for (final entry in translations.entries) {
+        final lang = entry.key;
+        final map = entry.value;
         final file = File('$outputDir/$lang.json');
-        file.writeAsStringSync(JsonEncoder.withIndent('  ').convert(map));
-      });
+
+        Map<String, dynamic> finalMap = map;
+
+        if (merge && file.existsSync()) {
+          final existingMap = ExcelParser.i.loadExistingJson(file.path);
+          finalMap = ExcelParser.i.mergTranslation(
+            existing: existingMap,
+            incoming: map,
+          );
+        }
+
+        await file.writeAsString(
+          JsonEncoder.withIndent('  ').convert(finalMap),
+        );
+      }
+
+      // Generate locale keys
+      final localeDir = userLocaleKeyDir ?? outputDir;
+      final localeDirectory = Directory(localeDir);
+      if (!localeDirectory.existsSync()) {
+        localeDirectory.createSync(recursive: true);
+      }
 
       LocaleKeyGenerator.i.generateKeysFile(
         translations: translations,
-        outputDir: userLocaleKeyDir ?? outputDir,
+        outputDir: localeDir,
         useCamelCase: useCamelCase,
       );
-        } catch (e) {
+    } catch (e) {
       rethrow;
     }
   }
