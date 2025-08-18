@@ -42,7 +42,6 @@ class _TranslationPreviewState extends State<TranslationPreview> {
         translationsSheet: sheetData,
         name: fileName,
       );
-
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Only Excel files (.xlsx / .xls) allowed")),
@@ -50,6 +49,7 @@ class _TranslationPreviewState extends State<TranslationPreview> {
     }
   }
 
+  bool hasDuplicates() => widget.duplicates != null && widget.duplicates != 0;
   @override
   Widget build(BuildContext context) {
     if (widget.translations.isEmpty) {
@@ -78,7 +78,7 @@ class _TranslationPreviewState extends State<TranslationPreview> {
                 ),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
                 color: _dragging
-                    ? AppColors.success.withOpacity(0.1)
+                    ? AppColors.success.withValues(alpha: 0.1)
                     : AppColors.secondary,
               ),
               child: Center(child: Text("IMPORT OR DRAG FILE HERE")),
@@ -99,7 +99,7 @@ class _TranslationPreviewState extends State<TranslationPreview> {
             message:
                 "Automatically flags duplicate keys within each language to prevent errors",
             child: Badge(
-              isLabelVisible: widget.duplicates != null,
+              isLabelVisible: hasDuplicates(),
               offset: Offset(-16, -12),
               backgroundColor: AppColors.warning,
               label: Padding(
@@ -107,8 +107,8 @@ class _TranslationPreviewState extends State<TranslationPreview> {
                 child: Text("Duplicated ${widget.duplicates}"),
               ),
               child: TextButton(
-                onPressed: widget.onPressed,
-                style: widget.duplicates != null
+                onPressed: hasDuplicates() ? widget.onPressed : null,
+                style: hasDuplicates()
                     ? TextButton.styleFrom(
                         side: BorderSide(color: AppColors.border),
                       )
