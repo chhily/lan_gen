@@ -11,13 +11,14 @@ class AppManager {
   FileServices fileServices = FileServices.i;
 
   void exportTranslations(
-    Map<String, Map<String, String>> translations,
+    Map<String, Map<String, String>>? translations,
     BuildContext context, {
     String? userDir,
     String? userLocaleKeyDir,
     bool useCamelCase = false,
     required ExportMode exportMode,
   }) {
+    if (translations == null) return;
     try {
       switch (exportMode) {
         case ExportMode.overWrite:
@@ -69,6 +70,7 @@ class AppManager {
             excelFilePath: excelFilePath,
             savedTranslateFilePath: savedTranslateFilePath,
             savedLocaleKeyFilePath: savedLocaleKeyFilePath,
+            translationsSheet: {}
           ),
         )
         .whenComplete(() async {
