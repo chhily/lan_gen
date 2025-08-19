@@ -28,7 +28,7 @@ ValueNotifier<TranslationData> translationData = ValueNotifier<TranslationData>(
     excelFilePath: '',
     savedTranslateFilePath: '',
     savedLocaleKeyFilePath: '',
-    translationsSheet: {}
+    translationsSheet: {},
   ),
 );
 
@@ -45,13 +45,15 @@ class _HomePageState extends State<HomePage> {
   Future<void> setSelectedSheetData(TranslationData? selectedValue) async {
     if (selectedValue == null) return;
 
-    final result = await AppManager().getSheetData(filePath: selectedValue.excelFilePath);
+    final result = await AppManager().getSheetData(
+      filePath: selectedValue.excelFilePath,
+    );
     translationData.value = translationData.value.copyWith(
       name: selectedValue.name,
       excelFilePath: selectedValue.excelFilePath,
       savedTranslateFilePath: selectedValue.savedTranslateFilePath,
       savedLocaleKeyFilePath: selectedValue.savedLocaleKeyFilePath,
-      translationsSheet:  result
+      translationsSheet: result,
     );
     setState(() {});
   }
@@ -59,14 +61,13 @@ class _HomePageState extends State<HomePage> {
   Future<void> importFile() async {
     final result = await AppManager().pickSheetFile();
     if (result?.files.isNotEmpty ?? false) {
-
       final file = result!.files.single;
       final sheetData = await AppManager().getSheetData(filePath: file.path);
 
       translationData.value = translationData.value.copyWith(
         name: file.name,
         excelFilePath: file.path,
-        translationsSheet: sheetData
+        translationsSheet: sheetData,
       );
 
       setState(() {});
@@ -198,7 +199,7 @@ class _HomePageState extends State<HomePage> {
             onExportFile: isHasFile()
                 ? () {
                     AppManager().exportTranslations(
-                     translationData.value.translationsSheet,
+                      translationData.value.translationsSheet,
                       context,
                       exportMode: exportNotifier.value,
                       useCamelCase: useCamelCaseNotifier.value,
@@ -268,7 +269,7 @@ class _HomePageState extends State<HomePage> {
                         Scaffold.of(context).openDrawer();
                       },
                     );
-                  }
+                  },
                 ),
               );
             },
