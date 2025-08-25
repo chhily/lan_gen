@@ -6,17 +6,17 @@ part of 'translation_data.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class TranslationDataAdapter extends TypeAdapter<TranslationData> {
+class TranslationDataAdapter extends TypeAdapter<UserTranslationData> {
   @override
   final int typeId = 1;
 
   @override
-  TranslationData read(BinaryReader reader) {
+  UserTranslationData read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return TranslationData(
+    return UserTranslationData(
       name: fields[0] as String,
       excelFilePath: fields[1] as String,
       savedTranslateFilePath: fields[2] as String,
@@ -26,7 +26,7 @@ class TranslationDataAdapter extends TypeAdapter<TranslationData> {
   }
 
   @override
-  void write(BinaryWriter writer, TranslationData obj) {
+  void write(BinaryWriter writer, UserTranslationData obj) {
     writer
       ..writeByte(5)
       ..writeByte(0)

@@ -64,7 +64,7 @@ class AppManager {
     required Future<void> Function() loadProjectHistory,
   }) async {
     await StorageManager.saveTranslation(
-          TranslationData(
+          UserTranslationData(
             name: name,
             excelFilePath: excelFilePath,
             savedTranslateFilePath: savedTranslateFilePath,

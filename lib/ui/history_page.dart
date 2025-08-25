@@ -10,7 +10,7 @@ import 'package:lan_gen/utils/storage_manager.dart';
 import '../models/translation_data.dart';
 
 class HistoryPage extends StatefulWidget {
-  final void Function(TranslationData? value)? onSelectSheet;
+  final void Function(UserTranslationData? value)? onSelectSheet;
   const HistoryPage({super.key, this.onSelectSheet});
 
   @override
@@ -18,7 +18,7 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  void onDeleteProject(TranslationData? itemValue) {
+  void onDeleteProject(UserTranslationData? itemValue) {
     if (itemValue == null) return;
     StorageManager.deleteProject(itemValue).whenComplete(() {
       setState(() {

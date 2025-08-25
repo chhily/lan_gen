@@ -13,8 +13,8 @@ import 'package:lan_gen/utils/storage_manager.dart';
 
 import 'translate_preview.dart';
 
-ValueNotifier<List<TranslationData>?> translationHistoryNotifier =
-    ValueNotifier<List<TranslationData>?>(null);
+ValueNotifier<List<UserTranslationData>?> translationHistoryNotifier =
+    ValueNotifier<List<UserTranslationData>?>(null);
 
 ValueNotifier<ExportMode> exportNotifier = ValueNotifier<ExportMode>(
   ExportMode.overWrite,
@@ -22,8 +22,8 @@ ValueNotifier<ExportMode> exportNotifier = ValueNotifier<ExportMode>(
 
 ValueNotifier<bool> useCamelCaseNotifier = ValueNotifier<bool>(false);
 
-ValueNotifier<TranslationData> translationData = ValueNotifier<TranslationData>(
-  TranslationData(
+ValueNotifier<UserTranslationData> translationData = ValueNotifier<UserTranslationData>(
+  UserTranslationData(
     name: '',
     excelFilePath: '',
     savedTranslateFilePath: '',
@@ -41,7 +41,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   Map<String, Map<String, String>> translations = {};
 
-  Future<void> setSelectedSheetData(TranslationData? selectedValue) async {
+  Future<void> setSelectedSheetData(UserTranslationData? selectedValue) async {
     if (selectedValue == null) return;
     translations =
         await AppManager().getSheetData(
@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage> {
   bool isHasFile() => translationData.value.excelFilePath.isNotEmpty;
 
   void clearData() {
-    translationData.value = TranslationData(
+    translationData.value = UserTranslationData(
       name: '',
       excelFilePath: '',
       savedTranslateFilePath: '',
@@ -105,7 +105,7 @@ class _HomePageState extends State<HomePage> {
         data.savedTranslateFilePath.isNotEmpty;
   }
 
-  void onGenerateFile(TranslationData data) {
+  void onGenerateFile(UserTranslationData data) {
     debugPrint(
       "path : ${data.savedTranslateFilePath.trim()} ${data.savedLocaleKeyFilePath}",
     );
@@ -224,7 +224,7 @@ class _HomePageState extends State<HomePage> {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          ValueListenableBuilder<TranslationData>(
+          ValueListenableBuilder<UserTranslationData>(
             valueListenable: translationData,
             builder: (context, data, _) {
               return ExportModeWidget(

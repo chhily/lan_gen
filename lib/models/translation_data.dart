@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 part 'translation_data.g.dart';
 
 @HiveType(typeId: 1)
-class TranslationData {
+class UserTranslationData {
   @HiveField(0)
   final String name;
   @HiveField(1)
@@ -15,7 +15,7 @@ class TranslationData {
   @HiveField(4)
   final int? timeStamps;
 
-  TranslationData({
+  UserTranslationData({
     required this.name,
     required this.excelFilePath,
     required this.savedTranslateFilePath,
@@ -23,14 +23,14 @@ class TranslationData {
     this.timeStamps,
   });
 
-  TranslationData copyWith({
+  UserTranslationData copyWith({
     String? name,
     String? excelFilePath,
     String? savedTranslateFilePath,
     String? savedLocaleKeyFilePath,
     int? timeStamps,
   }) {
-    return TranslationData(
+    return UserTranslationData(
       name: name ?? this.name,
       excelFilePath: excelFilePath ?? this.excelFilePath,
       savedTranslateFilePath:
