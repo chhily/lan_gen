@@ -1,15 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lan_gen/models/duplicate_record.dart';
+import 'package:lan_gen/shared/provider/app_provider.dart';
 
 class ExcelParser {
   ExcelParser._init();
   static ExcelParser? _i;
   static ExcelParser get i => _i ??= ExcelParser._init();
-  List<DuplicateRecord> duplicateRecord = [];
 
-  Map<String, Map<String, String>> parseTranslation(List<List<dynamic>> rows) {
-    duplicateRecord.clear();
+  Map<String, Map<String, String>> parseTranslation(
+    List<List<dynamic>> rows, {
+    required Ref ref,
+  }) {
+    ref.read(duplicateProvider.notifier).clear();
     if (rows.isEmpty) return {};
 
     final headers = rows.first.map((e) => e.toString().trim()).toList();
@@ -35,15 +39,17 @@ class ExcelParser {
 
         // Check for duplicate record
         if (translations[lang]!.containsKey(key)) {
-          duplicateRecord.add(
-            DuplicateRecord(
-              lang: lang,
-              key: key,
-              oldValue: translations[lang]![key]!,
-              newValue: value,
-              rowNumber: rowIndex + 1, // Excel rows are 1-indexed
-            ),
-          );
+          ref
+              .read(duplicateProvider.notifier)
+              .add(
+                DuplicateRecord(
+                  lang: lang,
+                  key: key,
+                  oldValue: translations[lang]![key]!,
+                  newValue: value,
+                  rowNumber: rowIndex + 1, // Excel rows are 1-indexed
+                ),
+              );
         }
         translations[lang]![key] = value;
       }
@@ -58,7 +64,7 @@ class ExcelParser {
     return Map<String, String>.from(jsonDecode(file.readAsStringSync()));
   }
 
-  Map<String, String> mergTranslation({
+  Map<String, String> mergeTranslation({
     required Map<String, String> existing,
     required Map<String, String> incoming,
   }) {

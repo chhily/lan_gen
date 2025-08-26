@@ -1,16 +1,18 @@
 import 'package:lan_gen/models/translation_data.dart';
-import 'package:lan_gen/services/exportor.dart';
+import 'package:lan_gen/core/services/exportor.dart';
 
 class TranslationState {
   final UserTranslationData? userData;
   final Map<String, Map<String, String>>? translations;
+  final List<UserTranslationData>? userTrHistory;
   final ExportMode? exportMode;
-  final bool useCamelCase;
+  bool useCamelCase;
   final String? errMsg;
 
   TranslationState({
     this.userData,
     this.translations = const {},
+    this.userTrHistory = const [],
     this.exportMode,
     this.useCamelCase = false,
     this.errMsg,
@@ -18,8 +20,8 @@ class TranslationState {
 
   TranslationState copyWith({
     UserTranslationData? userData,
-     Map<String, Map<String, String>>? translations,
-
+    Map<String, Map<String, String>>? translations,
+    List<UserTranslationData>? userTrHistory,
     ExportMode? exportMode,
     bool? useCamelCase,
     String? errMsg,
@@ -27,6 +29,7 @@ class TranslationState {
     return TranslationState(
       userData: userData ?? this.userData,
       translations: translations ?? this.translations,
+      userTrHistory: userTrHistory ?? this.userTrHistory,
       exportMode: exportMode ?? this.exportMode,
       useCamelCase: useCamelCase ?? this.useCamelCase,
       errMsg: errMsg ?? this.errMsg,
