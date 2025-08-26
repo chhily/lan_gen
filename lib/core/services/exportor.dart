@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:lan_gen/services/excel_parser.dart';
+import 'package:lan_gen/core/utils/logger.dart';
+import 'package:lan_gen/core/services/excel_parser.dart';
 
 import 'locale_key_generator.dart';
 
@@ -22,15 +23,19 @@ class Exportor {
     bool merge = false,
   }) async {
     try {
-      // Ask user for directory if not provided
-      String? outputDir =
-          userDir ?? await FilePicker.platform.getDirectoryPath();
-      print("userDir $userDir");
+      // Use saved directory or prompt
+      String? outputDir = userDir;
+
       if (outputDir == null || outputDir.isEmpty) {
-        throw Exception("No output directory selected.");
+        outputDir = await FilePicker.platform.getDirectoryPath();
       }
 
-      // Ensure the directory exists
+      if (outputDir == null || outputDir.isEmpty) {
+        // Instead of throwing, handle gracefully
+        AppLogger.info("⚠️ User canceled directory selection.");
+        return;
+      }
+
       final dir = Directory(outputDir);
       if (!dir.existsSync()) {
         dir.createSync(recursive: true);
@@ -45,7 +50,7 @@ class Exportor {
 
         if (merge && file.existsSync()) {
           final existingMap = ExcelParser.i.loadExistingJson(file.path);
-          finalMap = ExcelParser.i.mergTranslation(
+          finalMap = ExcelParser.i.mergeTranslation(
             existing: existingMap,
             incoming: map,
           );
@@ -56,9 +61,12 @@ class Exportor {
         );
       }
 
-      // Generate locale keys
-      final localeDir = userLocaleKeyDir ?? outputDir;
-      final localeDirectory = Directory(localeDir);
+      // Locale key generation
+      String? localeDir = userLocaleKeyDir;
+      if (userLocaleKeyDir == null || userLocaleKeyDir.isEmpty) {
+        localeDir = outputDir;
+      }
+      final localeDirectory = Directory(localeDir!);
       if (!localeDirectory.existsSync()) {
         localeDirectory.createSync(recursive: true);
       }
@@ -68,7 +76,8 @@ class Exportor {
         outputDir: localeDir,
         useCamelCase: useCamelCase,
       );
-    } catch (e) {
+    } catch (e, st) {
+      AppLogger.error("❌ exportTranslations failed: $e\n$st");
       rethrow;
     }
   }

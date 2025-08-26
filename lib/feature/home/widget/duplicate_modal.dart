@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../models/duplicate_record.dart';
-import '../shared/app_colors.dart';
-import '../shared/themes/app_text_theme.dart';
-import '../shared/widget/app_space.dart';
+import '../../../models/duplicate_record.dart';
+import '../../../shared/themes/app_text_theme.dart';
+import '../../../shared/themes/themes.dart';
+import '../../../shared/widget/app_space.dart';
+
 
 class DuplicateModal extends StatelessWidget {
   final List<DuplicateRecord> duplicateRecord;

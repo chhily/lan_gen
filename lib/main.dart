@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:lan_gen/feature/home/home_screen.dart';
 import 'package:lan_gen/models/translation_data.dart';
 import 'package:lan_gen/shared/themes/app_theme.dart';
-import 'package:lan_gen/ui/home_page.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -26,8 +27,9 @@ Future<void> main() async {
   }
 
   await Hive.initFlutter(supportDir.path);
+  Hive.registerAdapter(TranslationDataAdapter());
 
-  runApp(const MyApp());
+  runApp(ProviderScope(child: const MyApp()));
 }
 
 class MyApp extends StatefulWidget {
@@ -41,7 +43,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    Hive.registerAdapter(TranslationDataAdapter());
   }
 
   @override
@@ -50,7 +51,7 @@ class _MyAppState extends State<MyApp> {
       title: 'LAN~GEN',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: HomeScreen(),
     );
   }
 }
