@@ -18,6 +18,14 @@ class TranslationState {
     this.errMsg,
   });
 
+  TranslationState.initial({
+    this.userData,
+    this.translations,
+    this.exportMode = ExportMode.overWrite,
+    this.useCamelCase = false,
+    this.errMsg,
+    this.userTrHistory,
+  });
   TranslationState copyWith({
     UserTranslationData? userData,
     Map<String, Map<String, String>>? translations,

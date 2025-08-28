@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../themes/app_text_theme.dart';
@@ -18,4 +20,16 @@ class AppUtils {
           ),
         ),
       );
+}
+
+class Debouncer {
+  final int milliseconds;
+  Timer? _timer;
+
+  Debouncer({this.milliseconds = 500});
+
+  Future<void> run(VoidCallback action) async {
+    _timer?.cancel();
+    _timer = Timer(Duration(milliseconds: milliseconds), action);
+  }
 }

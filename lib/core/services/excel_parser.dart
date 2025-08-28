@@ -35,9 +35,9 @@ class ExcelParser {
 
       for (int col = 1; col < headers.length; col++) {
         final lang = headers[col];
-        final value = row[col]?.toString() ?? '';
+        final value = row.length > col ? (row[col]?.toString() ?? '') : '';
 
-        // Check for duplicate record
+        // If this key already exists for this language
         if (translations[lang]!.containsKey(key)) {
           ref
               .read(duplicateProvider.notifier)
@@ -50,8 +50,17 @@ class ExcelParser {
                   rowNumber: rowIndex + 1, // Excel rows are 1-indexed
                 ),
               );
+          // Only overwrite if the current value is empty and the new value is not empty
+          if ((translations[lang]![key] == null ||
+                  translations[lang]![key]!.isEmpty) &&
+              value.isNotEmpty) {
+            translations[lang]![key] = value;
+          }
+          // Otherwise, keep the first non-empty value
+        } else {
+          // Only set if value is not empty, or if it's the first occurrence
+          translations[lang]![key] = value;
         }
-        translations[lang]![key] = value;
       }
     }
 
