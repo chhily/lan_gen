@@ -4,10 +4,12 @@ import 'package:lan_gen/feature/history/history_screen.dart';
 import 'package:lan_gen/feature/home/widget/action_modal.dart';
 import 'package:lan_gen/feature/home/widget/export_mode_widget.dart';
 import 'package:lan_gen/feature/home/widget/generate_modal.dart';
+import 'package:lan_gen/feature/preview/sheet_preview.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
 
+import '../../shared/app_colors.dart';
+import '../../shared/provider/sheet_provider/sheet_provider.dart';
 import '../../shared/provider/translate_provider/translation_provider.dart';
-import '../../shared/widget/app_space.dart';
 import '../preview/translation_preview.dart';
 import 'widget/duplicate_modal.dart';
 
@@ -57,44 +59,95 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: DuplicateModal(duplicateRecord: ref.watch(duplicateProvider)),
       ),
       appBar: AppBar(
-        centerTitle: true,
+        centerTitle: false,
         title: const Text("Aoi.dev"),
-        leading: SizedBox(),
+        leading: const SizedBox(),
         leadingWidth: 0,
         actions: [
           ActionModal(
             onOpenHistory: () {
-              // show history dialog
               onShowHistoryModal();
             },
           ),
         ],
       ),
-      body: ListView(
-        padding: EdgeInsets.all(12),
-        children: [
-          // ExportModeModal
-          ExportModeWidget(
-            onTap: () {
-              onShowGenerateModal();
-            },
-          ),
-          AppSpace.y(y: 32),
-          // TranslationPreview
-          Builder(
-            builder: (context) {
-              return Center(
-                child: TranslationPreview(
-                  onPressed: () {
-                    Scaffold.of(context).openDrawer();
-                  },
-                  duplicates: ref.watch(duplicateProvider).length,
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: DefaultTabController(
+          length: 2,
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: ExportModeWidget(
+                    onTap: () {
+                      ref
+                          .read(suggestedTranslationProvider.notifier)
+                          .setSuggestion(
+                            ref.watch(translationProvider).translations,
+                          );
+                    },
+                  ),
                 ),
-              );
-            },
+              ),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _TabBarDelegate(
+                  TabBar(
+                    indicatorColor: AppColors.tertiary,
+                    labelColor: AppColors.textPrimary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    tabs: [
+                      Tab(text: "Preview"),
+                      Tab(text: "Sheet"),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            body: TabBarView(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  child: TranslationPreview(
+                    onPressed: () => Scaffold.of(context).openDrawer(),
+                    duplicates: ref.watch(duplicateProvider).length,
+                  ),
+                ),
+                SheetPreview(),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
+}
+
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+
+  _TabBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) => false;
 }

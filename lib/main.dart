@@ -27,7 +27,7 @@ Future<void> main() async {
   }
 
   await Hive.initFlutter(supportDir.path);
-  Hive.registerAdapter(TranslationDataAdapter());
+  Hive.registerAdapter(UserTranslationDataAdapter());
 
   runApp(ProviderScope(child: const MyApp()));
 }

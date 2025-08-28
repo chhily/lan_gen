@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lan_gen/core/services/exportor.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
+import 'package:lan_gen/shared/provider/sheet_provider/sheet_provider.dart';
 import 'package:lan_gen/shared/provider/translate_provider/translation_provider.dart';
 
 import '../../../shared/themes/app_text_theme.dart';
@@ -72,7 +73,7 @@ class ExportModeWidget extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text("<Custom Path/>"),
+            Text("<Auto tr/>"),
             AppSpace.y(y: AppDimensions.sm),
             InkWell(
               onTap: onTap,
@@ -82,7 +83,7 @@ class ExportModeWidget extends ConsumerWidget {
                 ),
                 padding: EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                 child: Text(
-                  "SET FILE PATH",
+                  "TRANSLATES",
                   style: appTextTheme.bodyMedium?.copyWith(
                     color: ref.read(translationProvider.notifier).validateData()
                         ? AppColors.success
@@ -127,8 +128,9 @@ class ExportModeWidget extends ConsumerWidget {
                     fixedSize: Size.fromHeight(48),
                     onPressed: isHasProject()
                         ? () {
+                            ref.invalidate(suggestedTranslationProvider);
+                            ref.invalidate(rawSheetProvider);
                             stateNotifier.clearStateValue();
-                            ref.invalidate(translationProvider);
                           }
                         : null,
                     background: AppColors.error,

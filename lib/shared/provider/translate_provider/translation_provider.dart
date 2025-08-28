@@ -3,10 +3,13 @@ import 'package:lan_gen/core/services/excel_parser.dart';
 import 'package:lan_gen/core/services/exportor.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:translator/translator.dart';
 
 import '../../../core/services/storage_service.dart';
 import '../../../models/translation_data.dart';
 import '../../../core/services/file_services.dart';
+import '../../utils/util.dart';
+import '../sheet_provider/sheet_provider.dart';
 import 'translation_state.dart';
 
 final translationProvider =
@@ -15,13 +18,68 @@ final translationProvider =
     );
 
 class TranslationNotifier extends StateNotifier<TranslationState> {
+  final Ref ref;
+  final FileServices fileServices = FileServices.i;
+
   TranslationNotifier(this.ref) : super(TranslationState()) {
     // load history as soon app initialized
     loadProjectHistory();
   }
 
-  final Ref ref;
-  final FileServices fileServices = FileServices.i;
+  /// Returns a map: language -> list of missing keys (missing = not present or empty string)
+  Map<String, List<String>> getMissingKeysPerLanguage() {
+    final translations = state.translations;
+    if (translations == null || translations.isEmpty) return {};
+
+    // Collect all unique keys across all languages
+    final allKeys = <String>{};
+    for (final lang in translations.keys) {
+      allKeys.addAll(translations[lang]?.keys ?? []);
+    }
+
+    final missing = <String, List<String>>{};
+    for (final lang in translations.keys) {
+      final langMap = translations[lang] ?? {};
+      final missingKeys = <String>[];
+      for (final key in allKeys) {
+        final value = langMap[key];
+        if (value == null || value.isEmpty) {
+          missingKeys.add(key);
+        }
+      }
+      if (missingKeys.isNotEmpty) {
+        missing[lang] = missingKeys;
+      }
+    }
+    return missing;
+  }
+
+  /// Returns a map: key -> list of languages where the key is missing (missing = not present or empty string)
+  Map<String, List<String>> getMissingLanguagesPerKey() {
+    final translations = state.translations;
+    if (translations == null || translations.isEmpty) return {};
+
+    // Collect all unique keys across all languages
+    final allKeys = <String>{};
+    for (final lang in translations.keys) {
+      allKeys.addAll(translations[lang]?.keys ?? []);
+    }
+
+    final missing = <String, List<String>>{};
+    for (final key in allKeys) {
+      final missingLangs = <String>[];
+      for (final lang in translations.keys) {
+        final value = translations[lang]?[key];
+        if (value == null || value.isEmpty) {
+          missingLangs.add(lang);
+        }
+      }
+      if (missingLangs.isNotEmpty) {
+        missing[key] = missingLangs;
+      }
+    }
+    return missing;
+  }
 
   /// Import an Excel sheet and store it in state
   Future<void> onImportSheet() async {
@@ -34,7 +92,7 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
         _setErrMsg("Invalid file path");
         return;
       }
-
+      if (!mounted) return; // <- don't update if disposed
       final fileName = result.files.single.name;
       final sheetData = await _getSheetData(filePath);
 
@@ -120,12 +178,39 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
   ) async {
     try {
       final result = await fileServices.readFile(path: filePath);
-      return ExcelParser.i.parseTranslation(result, ref: ref);
+      ref.read(rawSheetProvider.notifier).state = result;
+      if (validateRaw(result)) {
+        return ExcelParser.i.parseTranslation(result, ref: ref);
+      }
+      return {};
     } catch (e, st) {
       _setErrMsg("Failed to parse sheet", err: e);
       AppLogger.error("_getSheetData exception", [e, st]);
       rethrow;
     }
+  }
+
+  bool validateRaw(List<List<dynamic>> rows) {
+    if (rows.isEmpty) return false;
+
+    final headers = rows.first;
+    if (headers.isEmpty || headers.first.toString().toLowerCase() != "key") {
+      return false; // first column must be "key"
+    }
+    return true;
+  }
+
+  Future<void> getSheetData(String filePath, String fileName) async {
+    final sheetData = await _getSheetData(filePath);
+    _addSheetData(
+      sheetData: sheetData,
+      trData: UserTranslationData(
+        name: fileName,
+        excelFilePath: filePath,
+        savedTranslateFilePath: '',
+        savedLocaleKeyFilePath: '',
+      ),
+    );
   }
 
   void _addSheetData({
@@ -151,12 +236,7 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
 
   /// Reset state
   void clearStateValue() {
-    state = state.copyWith(
-      userData: null,
-      translations: null,
-      exportMode: ExportMode.overWrite,
-      useCamelCase: false,
-      errMsg: null,
-    );
+    state = TranslationState.initial();
+    loadProjectHistory();
   }
 }

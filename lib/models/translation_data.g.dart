@@ -6,7 +6,7 @@ part of 'translation_data.dart';
 // TypeAdapterGenerator
 // **************************************************************************
 
-class TranslationDataAdapter extends TypeAdapter<UserTranslationData> {
+class UserTranslationDataAdapter extends TypeAdapter<UserTranslationData> {
   @override
   final int typeId = 1;
 
@@ -22,15 +22,13 @@ class TranslationDataAdapter extends TypeAdapter<UserTranslationData> {
       savedTranslateFilePath: fields[2] as String,
       savedLocaleKeyFilePath: fields[3] as String,
       timeStamps: fields[4] as int?,
-      translationsSheet: (fields[5] as Map?)?.map((dynamic k, dynamic v) =>
-          MapEntry(k as String, (v as Map).cast<String, String>())),
     );
   }
 
   @override
   void write(BinaryWriter writer, UserTranslationData obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -40,9 +38,7 @@ class TranslationDataAdapter extends TypeAdapter<UserTranslationData> {
       ..writeByte(3)
       ..write(obj.savedLocaleKeyFilePath)
       ..writeByte(4)
-      ..write(obj.timeStamps)
-      ..writeByte(5)
-      ..write(obj.translationsSheet);
+      ..write(obj.timeStamps);
   }
 
   @override
@@ -51,7 +47,7 @@ class TranslationDataAdapter extends TypeAdapter<UserTranslationData> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is TranslationDataAdapter &&
+      other is UserTranslationDataAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
