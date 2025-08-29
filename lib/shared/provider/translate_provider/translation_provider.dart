@@ -2,13 +2,12 @@ import 'package:lan_gen/core/utils/logger.dart';
 import 'package:lan_gen/core/services/excel_parser.dart';
 import 'package:lan_gen/core/services/exportor.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
+import 'package:lan_gen/shared/provider/missing_key.dart';
 import 'package:riverpod/riverpod.dart';
-import 'package:translator/translator.dart';
 
 import '../../../core/services/storage_service.dart';
 import '../../../models/translation_data.dart';
 import '../../../core/services/file_services.dart';
-import '../../utils/util.dart';
 import '../sheet_provider/sheet_provider.dart';
 import 'translation_state.dart';
 
@@ -78,6 +77,7 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
         missing[key] = missingLangs;
       }
     }
+
     return missing;
   }
 
@@ -105,6 +105,8 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
           savedLocaleKeyFilePath: '',
         ),
       );
+
+      ref.read(missingKeyProvider.notifier).detectMissing(sheetData);
     } catch (e, st) {
       _setErrMsg("Failed to import sheet", err: e);
       AppLogger.error("onImportSheet exception", [e, st]);
@@ -119,11 +121,11 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
     }
 
     try {
-      final mode = ref.read(exportModeProvider);
+      final appProvider = ref.watch(appConfigProvider);
       await Exportor.i.exportTranslations(
         state.translations!,
-        useCamelCase: state.useCamelCase,
-        merge: mode == ExportMode.merge,
+        useCamelCase: appProvider.useCamelCase,
+        merge: appProvider.exportMode == ExportMode.merge,
         userDir: state.userData?.savedTranslateFilePath,
         userLocaleKeyDir: state.userData?.savedLocaleKeyFilePath,
       );
@@ -152,11 +154,6 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
   /// Assign user data
   void setUserData(UserTranslationData trData) {
     state = state.copyWith(userData: trData);
-  }
-
-  /// Toggle camelCase key mode
-  void toggleKeyModeBehaviour() {
-    state = state.copyWith(useCamelCase: !state.useCamelCase);
   }
 
   /// Load saved project history

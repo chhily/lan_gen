@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:lan_gen/core/extensions/string_extensions.dart';
+
 class LocaleKeyGenerator {
   LocaleKeyGenerator._init();
   static LocaleKeyGenerator? _i;
@@ -35,7 +37,7 @@ class LocaleKeyGenerator {
       node.forEach((name, child) {
         final fullKey = prefix.isEmpty ? name : "$prefix.$name";
         if (child.isEmpty) {
-          final constName = camelCase ? _toCamelCase(name) : _toSnakeCase(name);
+          final constName = camelCase ? name.toCamelCase() : name.toSnakeCase();
           buffer.writeln("  static const $constName = '$fullKey';");
         } else {
           final nestedName = camelCase ? _capitalize(name) : name.toLowerCase();
@@ -48,26 +50,26 @@ class LocaleKeyGenerator {
     writeClass(tree, "LocaleKeys", "");
   }
 
-  String _toSnakeCase(String text) {
-    return text.replaceAll('.', '_').toLowerCase();
-  }
-
-  String _toCamelCase(String text) {
-    if (text.isEmpty) return text;
-
-    // Normalize separators into spaces
-    final separators = RegExp(r'[.\-_ ]+');
-    final parts = text.split(separators);
-
-    if (parts.isEmpty) return text;
-
-    // Lowercase first part, capitalize rest
-    return parts.first.toLowerCase() +
-        parts.skip(1).map((word) {
-          if (word.isEmpty) return '';
-          return word[0].toUpperCase() + word.substring(1);
-        }).join();
-  }
+  // String _toSnakeCase(String text) {
+  //   return text.replaceAll('.', '_').toLowerCase();
+  // }
+  //
+  // String _toCamelCase(String text) {
+  //   if (text.isEmpty) return text;
+  //
+  //   // Normalize separators into spaces
+  //   final separators = RegExp(r'[.\-_ ]+');
+  //   final parts = text.split(separators);
+  //
+  //   if (parts.isEmpty) return text;
+  //
+  //   // Lowercase first part, capitalize rest
+  //   return parts.first.toLowerCase() +
+  //       parts.skip(1).map((word) {
+  //         if (word.isEmpty) return '';
+  //         return word[0].toUpperCase() + word.substring(1);
+  //       }).join();
+  // }
 
   void generateKeysFile({
     required Map<String, Map<String, String>> translations,
@@ -92,7 +94,7 @@ class LocaleKeyGenerator {
       // flat generation
       buffer.writeln("class LocaleKeys {");
       for (final key in keys) {
-        final constName = useCamelCase ? _toCamelCase(key) : _toSnakeCase(key);
+        final constName = useCamelCase ? key.toCamelCase() : key.toSnakeCase();
 
         buffer.writeln("  static const $constName = '$key';");
       }

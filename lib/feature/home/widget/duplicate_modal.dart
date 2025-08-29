@@ -5,7 +5,6 @@ import '../../../shared/themes/app_text_theme.dart';
 import '../../../shared/themes/themes.dart';
 import '../../../shared/widget/app_space.dart';
 
-
 class DuplicateModal extends StatelessWidget {
   final List<DuplicateRecord> duplicateRecord;
   const DuplicateModal({super.key, required this.duplicateRecord});

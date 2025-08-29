@@ -17,8 +17,8 @@ class ExportModeWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = ref.watch(translationProvider);
-    final exportProvider = ref.watch(exportModeProvider);
     final stateNotifier = ref.read(translationProvider.notifier);
+    final appProvider = ref.watch(appConfigProvider);
 
     bool isHasProject() => provider.userData?.name.isNotEmpty ?? false;
     return Row(
@@ -32,12 +32,13 @@ class ExportModeWidget extends ConsumerWidget {
             ToggleButtons(
               selectedColor: AppColors.success,
               isSelected: [
-                exportProvider == ExportMode.overWrite,
-                exportProvider == ExportMode.merge,
+                appProvider.exportMode == ExportMode.overWrite,
+                appProvider.exportMode == ExportMode.merge,
               ],
               onPressed: (index) {
-                ref.read(exportModeProvider.notifier).state =
-                    ExportMode.values[index];
+                ref
+                    .read(appConfigProvider.notifier)
+                    .setExportMode(ExportMode.values[index]);
               },
               children: const [
                 Padding(padding: EdgeInsets.all(8), child: Text("OVERWRITE")),
@@ -56,9 +57,9 @@ class ExportModeWidget extends ConsumerWidget {
             ToggleButtons(
               selectedColor: AppColors.success,
               onPressed: (index) {
-                ref.read(translationProvider.notifier).toggleKeyModeBehaviour();
+                ref.read(appConfigProvider.notifier).toggleCamelCase();
               },
-              isSelected: [provider.useCamelCase],
+              isSelected: [appProvider.useCamelCase],
               children: [
                 Padding(
                   padding: EdgeInsets.all(8),
@@ -83,7 +84,7 @@ class ExportModeWidget extends ConsumerWidget {
                 ),
                 padding: EdgeInsets.symmetric(vertical: 14, horizontal: 8),
                 child: Text(
-                  "TRANSLATES",
+                  "AUTO FILL",
                   style: appTextTheme.bodyMedium?.copyWith(
                     color: ref.read(translationProvider.notifier).validateData()
                         ? AppColors.success
