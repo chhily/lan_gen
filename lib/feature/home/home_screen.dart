@@ -6,6 +6,7 @@ import 'package:lan_gen/feature/home/widget/export_mode_widget.dart';
 import 'package:lan_gen/feature/home/widget/generate_modal.dart';
 import 'package:lan_gen/feature/preview/sheet_preview.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
+import 'package:lan_gen/shared/provider/missing_key.dart';
 
 import '../../shared/app_colors.dart';
 import '../../shared/provider/sheet_provider/sheet_provider.dart';
@@ -87,6 +88,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           .setSuggestion(
                             ref.watch(translationProvider).translations,
                           );
+
+                      // ref.read(missingKeyProvider.notifier).generateKeyName(value);
                     },
                   ),
                 ),
@@ -108,12 +111,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
             body: TabBarView(
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  child: TranslationPreview(
-                    onPressed: () => Scaffold.of(context).openDrawer(),
-                    duplicates: ref.watch(duplicateProvider).length,
-                  ),
+                Builder(
+                  builder: (context) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12.0),
+                      child: TranslationPreview(
+                        onPressed: () => Scaffold.of(context).openDrawer(),
+                        duplicates: ref.watch(duplicateProvider).length,
+                      ),
+                    );
+                  },
                 ),
                 SheetPreview(),
               ],

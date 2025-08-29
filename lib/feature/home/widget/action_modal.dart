@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lan_gen/shared/provider/translate_provider/translation_provider.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 
-import '../../../shared/app_colors.dart';
 import '../../../shared/widget/app_button.dart';
 
 class ActionModal extends ConsumerWidget {
