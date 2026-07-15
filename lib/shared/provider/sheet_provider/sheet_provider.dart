@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:translator/translator.dart';
 
 import '../../../core/utils/logger.dart';
+import '../../../models/suggest_item.dart';
 
 final rawSheetProvider = StateProvider<List<List<dynamic>>>((ref) => []);
 
@@ -12,7 +13,7 @@ final suggestedTranslationProvider =
     >((ref) => SuggestedTranslationNotifier());
 
 class SuggestedTranslationState {
-  final Map<String, Map<String, String>> translations;
+  final Map<String, Map<String, SuggestionItem>> translations;
   final bool isLoading;
 
   const SuggestedTranslationState({
@@ -21,7 +22,7 @@ class SuggestedTranslationState {
   });
 
   SuggestedTranslationState copyWith({
-    Map<String, Map<String, String>>? translations,
+    Map<String, Map<String, SuggestionItem>>? translations,
     bool? isLoading,
   }) {
     return SuggestedTranslationState(
@@ -51,30 +52,31 @@ class SuggestedTranslationNotifier
     final sourceMap = currentTranslate[sourceLang];
     if (sourceMap == null || sourceMap.isEmpty) return;
 
-    final pending = <_PendingTranslation>[
+    final pending = <_TranslationTask>[
       for (final lang in currentTranslate.keys)
         if (lang != sourceLang)
           for (final key in sourceMap.keys)
             if ((currentTranslate[lang]?[key] ?? '').isEmpty)
-              _PendingTranslation(lang: lang, key: key, text: sourceMap[key]!),
+              _TranslationTask(lang: lang, key: key, text: sourceMap[key]!),
     ];
 
     if (pending.isEmpty) return;
 
     state = state.copyWith(isLoading: true);
     try {
-      final results = <String, Map<String, String>>{};
+      final results = <String, Map<String, SuggestionItem>>{};
 
-      await _runWithConcurrency(pending, _maxConcurrentRequests, (
-        item,
-      ) async {
-        final translated = await translateText(
+      await _runWithConcurrency(pending, _maxConcurrentRequests, (item) async {
+        final translated = await _translateText(
           item.text,
           from: sourceLang,
           to: item.lang,
         );
         if (translated.isEmpty) return;
-        results.putIfAbsent(item.lang, () => {})[item.key] = translated;
+        results.putIfAbsent(item.lang, () => {})[item.key] = SuggestionItem(
+          value: translated,
+          accepted: false,
+        );
       });
 
       state = state.copyWith(translations: results, isLoading: false);
@@ -85,7 +87,7 @@ class SuggestedTranslationNotifier
     }
   }
 
-  Future<String> translateText(
+  Future<String> _translateText(
     String text, {
     String from = 'en',
     required String to,
@@ -105,28 +107,69 @@ class SuggestedTranslationNotifier
     String key,
     void Function(String lang, String key, String value) onApply,
   ) {
-    final value = state.translations[lang]?[key] ?? '';
-    onApply(lang, key, value);
-    removeSuggestion(lang, key);
+    final item = state.translations[lang]?[key];
+    if (item == null) return;
+
+    onApply(lang, key, item.value);
+
+    _setAccepted(lang, key);
   }
 
-  void removeSuggestion(String lang, String key) {
-    final langMap = Map<String, String>.from(state.translations[lang] ?? {});
-    langMap.remove(key);
-    final newTranslations = {...state.translations, lang: langMap};
-    if (langMap.isEmpty) newTranslations.remove(lang);
-    state = state.copyWith(translations: newTranslations);
+  void acceptLanguageSuggestion(
+    String lang,
+    void Function(String key, String value) onApply,
+  ) {
+    final langMap = state.translations[lang];
+    if (langMap == null || langMap.isEmpty) return;
+
+    final newLang = <String, SuggestionItem>{};
+
+    for (final entry in langMap.entries) {
+      onApply(entry.key, entry.value.value);
+
+      newLang[entry.key] = entry.value.copyWith(accepted: true);
+    }
+
+    state = state.copyWith(
+      translations: {...state.translations, lang: newLang},
+    );
+  }
+
+  void resetSuggestion(String lang, String key) {
+    final item = state.translations[lang]?[key];
+    if (item == null) return;
+
+    final langMap = Map<String, SuggestionItem>.from(state.translations[lang]!);
+
+    langMap[key] = item.copyWith(accepted: false);
+
+    state = state.copyWith(
+      translations: {...state.translations, lang: langMap},
+    );
+  }
+
+  void _setAccepted(String lang, String key) {
+    final item = state.translations[lang]?[key];
+    if (item == null) return;
+
+    final langMap = Map<String, SuggestionItem>.from(state.translations[lang]!);
+
+    langMap[key] = item.copyWith(accepted: true);
+
+    state = state.copyWith(
+      translations: {...state.translations, lang: langMap},
+    );
   }
 
   void clear() => state = const SuggestedTranslationState();
 }
 
-class _PendingTranslation {
+class _TranslationTask {
   final String lang;
   final String key;
   final String text;
 
-  const _PendingTranslation({
+  const _TranslationTask({
     required this.lang,
     required this.key,
     required this.text,
