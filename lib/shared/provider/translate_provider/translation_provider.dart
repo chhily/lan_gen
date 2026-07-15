@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:lan_gen/core/utils/logger.dart';
 import 'package:lan_gen/core/services/excel_parser.dart';
 import 'package:lan_gen/core/services/exportor.dart';
@@ -161,12 +162,33 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
     try {
       final userTrData = await StorageManager.getSavedTranslationDate();
       AppLogger.debug("load trData $userTrData");
-      if (userTrData.isNotEmpty) {
         state = state.copyWith(userTrHistory: userTrData);
-      }
     } catch (e, st) {
       _setErrMsg("Couldn't load history", err: e);
       AppLogger.error("loadProjectHistory exception", [e, st]);
+    }
+  }
+
+  /// Delete a project from history
+  Future<void> deleteHistoryItem(UserTranslationData trData) async {
+    try {
+      await StorageManager.deleteProject(trData);
+      await loadProjectHistory();
+    } catch (e, st) {
+      _setErrMsg("Failed to delete history item", err: e);
+      AppLogger.error("deleteHistoryItem exception", [e, st]);
+    }
+  }
+
+  /// Load a project from history into the current state
+  Future<void> editHistoryItem(UserTranslationData trData) async {
+    try {
+      final sheetData = await _getSheetData(trData.excelFilePath);
+      state = state.copyWith(translations: sheetData, userData: trData);
+      ref.read(missingKeyProvider.notifier).detectMissing(sheetData);
+    } catch (e, st) {
+      _setErrMsg("Failed to load project from history", err: e);
+      AppLogger.error("editHistoryItem exception", [e, st]);
     }
   }
 
@@ -235,5 +257,23 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
   void clearStateValue() {
     state = TranslationState.initial();
     loadProjectHistory();
+  }
+
+  Future<void> onDownloadTemplate() async {
+    try {
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save Sample Template',
+        fileName: 'sample_template.xlsx',
+        type: FileType.custom,
+        allowedExtensions: ['xlsx'],
+      );
+
+      if (outputFile == null) return;
+
+      await fileServices.createSampleTemplate(outputFile);
+    } catch (e, st) {
+      _setErrMsg("Failed to save template", err: e);
+      AppLogger.error("onDownloadTemplate exception", [e, st]);
+    }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:lan_gen/feature/history/history_screen.dart';
 import 'package:lan_gen/feature/home/widget/action_modal.dart';
 import 'package:lan_gen/feature/home/widget/export_mode_widget.dart';
@@ -7,6 +8,7 @@ import 'package:lan_gen/feature/home/widget/generate_modal.dart';
 import 'package:lan_gen/feature/preview/sheet_preview.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
 import 'package:lan_gen/shared/provider/missing_key.dart';
+import 'package:lan_gen/shared/widget/app_loading.dart';
 
 import '../../shared/app_colors.dart';
 import '../../shared/provider/sheet_provider/sheet_provider.dart';
@@ -43,17 +45,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          final notifier = ref.read(translationProvider.notifier);
-          if (notifier.validateData()) {
-            ref.read(translationProvider.notifier).onExportAndGenerate();
-          } else {
-            onShowGenerateModal();
-          }
-        },
-        icon: const Icon(Icons.autorenew_rounded),
-        label: const Text("GENERATE"),
+      // floatingActionButton: FloatingActionButton.extended(
+      //   onPressed: () {
+      //     final notifier = ref.read(translationProvider.notifier);
+      //     if (notifier.validateData()) {
+      //       ref.read(translationProvider.notifier).onExportAndGenerate();
+      //     } else {
+      //       onShowGenerateModal();
+      //     }
+      //   },
+      //   icon: const Icon(Icons.autorenew_rounded),
+      //   label: const Text("GENERATE"),
+      // ),
+
+
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        animatedIconTheme: IconThemeData(size: 22.0),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.textPrimary,
+        visible: true,
+        closeManually: false,
+        curve: Curves.bounceIn,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.autorenew_rounded),
+            label: 'GENERATE',
+            onTap: () {
+              final notifier = ref.read(translationProvider.notifier);
+              if (notifier.validateData()) {
+                ref.read(translationProvider.notifier).onExportAndGenerate();
+              } else {
+                onShowGenerateModal();
+              }
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.file_download),
+            label: 'Sample Template',
+            onTap: () {
+              ref.read(translationProvider.notifier).onDownloadTemplate();
+            },
+          ),
+        ],
       ),
       drawer: SizedBox(
         width: MediaQuery.of(context).size.width * 0.5,
@@ -82,14 +116,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: ExportModeWidget(
-                    onTap: () {
-                      ref
+                    onTap: () async {
+                      AppLoading.show(context);
+                      await ref
                           .read(suggestedTranslationProvider.notifier)
                           .setSuggestion(
-                            ref.watch(translationProvider).translations,
+                            ref.read(translationProvider).translations,
                           );
-
-                      // ref.read(missingKeyProvider.notifier).generateKeyName(value);
+                      if (context.mounted) {
+                        AppLoading.close(context);
+                      }
                     },
                   ),
                 ),

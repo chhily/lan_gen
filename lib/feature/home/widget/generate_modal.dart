@@ -141,7 +141,7 @@ class _GenerateModalState extends ConsumerState<GenerateModal> {
             const Padding(
               padding: EdgeInsets.all(40.0),
               child: Text(
-                "Make sure your Flutter project knows where to find the generated files.",
+                "Make sure your project knows where to find the generated files.",
                 textAlign: TextAlign.center,
               ),
             ),

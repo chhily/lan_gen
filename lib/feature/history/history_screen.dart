@@ -68,7 +68,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       Expanded(
                         child: AppButton(
                           text: "DELETE",
-                          onPressed: () {},
+                          onPressed: () {
+                            if (itemValue != null) {
+                              ref
+                                  .read(translationProvider.notifier)
+                                  .deleteHistoryItem(itemValue);
+                            }
+                          },
                           background: AppColors.error,
                         ),
                       ),
@@ -77,7 +83,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         child: AppButton(
                           text: "EDIT",
                           onPressed: () {
-                            // widget.onSelectSheet?.call(itemValue);
+                            if (itemValue != null) {
+                              ref
+                                  .read(translationProvider.notifier)
+                                  .editHistoryItem(itemValue);
+                              Navigator.pop(context);
+                            }
                           },
                         ),
                       ),

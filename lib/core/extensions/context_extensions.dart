@@ -26,6 +26,14 @@ extension ContextExtension on BuildContext {
         ),
       );
 
+
+  get warningSnackBar => ScaffoldMessenger.of(this).showSnackBar(
+    const SnackBar(
+      backgroundColor: AppColors.warning,
+      content: Text("Oops! There's nothing to export!"),
+    ),
+  );
+
   get successSnackBar => ScaffoldMessenger.of(this).showSnackBar(
     const SnackBar(
       backgroundColor: AppColors.primary,

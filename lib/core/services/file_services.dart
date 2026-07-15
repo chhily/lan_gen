@@ -35,4 +35,39 @@ class FileServices {
     }
     return [];
   }
+
+  Future<void> createSampleTemplate(String path) async {
+    final excel = Excel.createExcel();
+    final Sheet sheet = excel['Sheet1'];
+
+    sheet.appendRow([
+      TextCellValue('key'),
+      TextCellValue('en'),
+      TextCellValue('km'),
+    ]);
+    sheet.appendRow([
+      TextCellValue('hello'),
+      TextCellValue('Hello'),
+      TextCellValue('សួស្តី'),
+    ]);
+    sheet.appendRow([
+      TextCellValue('bye'),
+      TextCellValue('Goodbye'),
+      TextCellValue('លាហើយ'),
+    ]);
+
+
+    sheet.appendRow([
+      TextCellValue('morning'),
+      TextCellValue('Good morning'),
+      TextCellValue(''),
+    ]);
+
+    final fileBytes = excel.save();
+    if (fileBytes != null) {
+      File(path)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(fileBytes);
+    }
+  }
 }

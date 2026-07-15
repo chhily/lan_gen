@@ -2,61 +2,87 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:translator/translator.dart';
 
 import '../../../core/utils/logger.dart';
-import '../../utils/util.dart';
 
 final rawSheetProvider = StateProvider<List<List<dynamic>>>((ref) => []);
 
 final suggestedTranslationProvider =
     StateNotifierProvider<
       SuggestedTranslationNotifier,
-      Map<String, Map<String, String>>
+      SuggestedTranslationState
     >((ref) => SuggestedTranslationNotifier());
 
+class SuggestedTranslationState {
+  final Map<String, Map<String, String>> translations;
+  final bool isLoading;
+
+  const SuggestedTranslationState({
+    this.translations = const {},
+    this.isLoading = false,
+  });
+
+  SuggestedTranslationState copyWith({
+    Map<String, Map<String, String>>? translations,
+    bool? isLoading,
+  }) {
+    return SuggestedTranslationState(
+      translations: translations ?? this.translations,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+}
+
 class SuggestedTranslationNotifier
-    extends StateNotifier<Map<String, Map<String, String>>> {
-  SuggestedTranslationNotifier() : super({});
+    extends StateNotifier<SuggestedTranslationState> {
+  SuggestedTranslationNotifier() : super(const SuggestedTranslationState());
   final GoogleTranslator _translator = GoogleTranslator();
-  final _debouncer = Debouncer(milliseconds: 600);
+
+  /// Max number of translation requests in flight at once. Keeps the call
+  /// bounded/concurrent instead of one-at-a-time, without hammering the
+  /// (unofficial) translate endpoint with hundreds of simultaneous requests.
+  static const _maxConcurrentRequests = 6;
 
   Future<void> setSuggestion(
     Map<String, Map<String, String>>? currentTranslate, {
     String sourceLang = 'en',
   }) async {
+    if (state.isLoading) return;
     if (currentTranslate == null || currentTranslate.isEmpty) return;
 
-    final currentTranslations = {
-      for (var lang in currentTranslate.keys)
-        lang: Map<String, String>.from(currentTranslate[lang] ?? {}),
-    };
+    final sourceMap = currentTranslate[sourceLang];
+    if (sourceMap == null || sourceMap.isEmpty) return;
 
-    final languages = currentTranslations.keys.toList();
-    final keys = currentTranslations[sourceLang]?.keys.toList() ?? [];
+    final pending = <_PendingTranslation>[
+      for (final lang in currentTranslate.keys)
+        if (lang != sourceLang)
+          for (final key in sourceMap.keys)
+            if ((currentTranslate[lang]?[key] ?? '').isEmpty)
+              _PendingTranslation(lang: lang, key: key, text: sourceMap[key]!),
+    ];
 
-    await _debouncer.run(() async {
-      for (final lang in languages) {
-        if (lang == sourceLang) continue;
+    if (pending.isEmpty) return;
 
-        for (final key in keys) {
-          final currentValue = currentTranslations[lang]?[key] ?? '';
-          if (currentValue.isEmpty) {
-            final translated = await translateText(
-              currentTranslations[sourceLang]![key]!,
-              from: sourceLang,
-              to: lang,
-            );
-            currentTranslations[lang]?[key] = translated;
-          }
-        }
-      }
+    state = state.copyWith(isLoading: true);
+    try {
+      final results = <String, Map<String, String>>{};
 
-      // single state update after all translations
-      state = {
-        for (var l in currentTranslations.keys)
-          l: Map<String, String>.from(currentTranslations[l]!),
-      };
+      await _runWithConcurrency(pending, _maxConcurrentRequests, (
+        item,
+      ) async {
+        final translated = await translateText(
+          item.text,
+          from: sourceLang,
+          to: item.lang,
+        );
+        if (translated.isEmpty) return;
+        results.putIfAbsent(item.lang, () => {})[item.key] = translated;
+      });
 
-      AppLogger.verbose("SUGGESTION $state");
-    });
+      state = state.copyWith(translations: results, isLoading: false);
+      AppLogger.verbose("SUGGESTION ${state.translations}");
+    } catch (e, st) {
+      state = state.copyWith(isLoading: false);
+      AppLogger.error("setSuggestion failed", [e, st]);
+    }
   }
 
   Future<String> translateText(
@@ -79,18 +105,51 @@ class SuggestedTranslationNotifier
     String key,
     void Function(String lang, String key, String value) onApply,
   ) {
-    final value = state[lang]?[key] ?? '';
+    final value = state.translations[lang]?[key] ?? '';
     onApply(lang, key, value);
     removeSuggestion(lang, key);
   }
 
   void removeSuggestion(String lang, String key) {
-    final langMap = Map<String, String>.from(state[lang] ?? {});
+    final langMap = Map<String, String>.from(state.translations[lang] ?? {});
     langMap.remove(key);
-    final newState = {...state, lang: langMap};
-    if (langMap.isEmpty) newState.remove(lang);
-    state = newState;
+    final newTranslations = {...state.translations, lang: langMap};
+    if (langMap.isEmpty) newTranslations.remove(lang);
+    state = state.copyWith(translations: newTranslations);
   }
 
-  void clear() => state = {};
+  void clear() => state = const SuggestedTranslationState();
+}
+
+class _PendingTranslation {
+  final String lang;
+  final String key;
+  final String text;
+
+  const _PendingTranslation({
+    required this.lang,
+    required this.key,
+    required this.text,
+  });
+}
+
+/// Runs [task] over [items] using a fixed pool of [concurrency] workers that
+/// pull the next item as soon as they're free, instead of awaiting one item
+/// at a time or blocking on a whole batch's slowest item.
+Future<void> _runWithConcurrency<T>(
+  List<T> items,
+  int concurrency,
+  Future<void> Function(T item) task,
+) async {
+  final iterator = items.iterator;
+
+  Future<void> worker() async {
+    while (iterator.moveNext()) {
+      await task(iterator.current);
+    }
+  }
+
+  await Future.wait(
+    List.generate(concurrency.clamp(1, items.length), (_) => worker()),
+  );
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lan_gen/shared/provider/translate_provider/translation_provider.dart';
+import 'package:lan_gen/shared/widget/app_space.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../shared/app_colors.dart';
@@ -56,7 +57,16 @@ class _DragDropSectionState extends ConsumerState<DragDropSection> {
                 ? AppColors.success.withValues(alpha: 0.1)
                 : AppColors.secondary,
           ),
-          child: Center(child: Text("IMPORT OR DRAG FILE HERE")),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.download_rounded, size: 80, color: AppColors.greyLight),
+                AppSpace.y(),
+                Text("IMPORT OR DRAG FILE HERE"),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lan_gen/shared/themes/app_text_theme.dart';
 
+import '../../shared/app_colors.dart';
 import '../../shared/provider/sheet_provider/sheet_provider.dart';
 import '../../shared/provider/translate_provider/translation_provider.dart';
 
@@ -21,12 +23,13 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
     final trData = ref.watch(translationProvider);
 
     if (rawSheet.isEmpty) {
-      return Center(child: Text("NO DATA"));
+      return Center(child: Text("NO DATA", style: appTextTheme.bodyMedium?.copyWith(color: AppColors.warning)));
     }
 
     final headers = rawSheet.first.map((e) => e.toString()).toList();
 
     return SingleChildScrollView(
+      primary: false,
       child: DataTable(
         columns: [for (final h in headers) DataColumn(label: Text(h))],
         rows: [
@@ -40,7 +43,7 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
                         final key = row[0]?.toString() ?? '';
                         final lang = headers[i];
                         final rawValue = row[i]?.toString() ?? '';
-                        final suggested = suggestions[lang]?[key];
+                        final suggested = suggestions.translations[lang]?[key];
 
                         return Stack(
                           children: [

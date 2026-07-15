@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lan_gen/core/extensions/context_extensions.dart';
 import 'package:lan_gen/shared/provider/translate_provider/translation_provider.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 
@@ -12,7 +13,6 @@ class ActionModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stateNotifier = ref.read(translationProvider.notifier);
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
@@ -37,6 +37,10 @@ class ActionModal extends ConsumerWidget {
             text: "EXPORT",
             icon: Icons.file_download_rounded,
             onPressed: () {
+              if (ref.watch(translationProvider).translations?.isEmpty ?? true) {
+                context.warningSnackBar();
+                return;
+              }
               final notifier = ref.read(translationProvider.notifier);
               // Export file doesn't need setUser Data
               notifier.onExportAndGenerate();
