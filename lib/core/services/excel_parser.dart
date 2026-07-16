@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lan_gen/core/utils/logger.dart';
 import 'package:lan_gen/models/duplicate_record.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
 
@@ -16,14 +17,34 @@ class ExcelParser {
     ref.read(duplicateProvider.notifier).clear();
     if (rows.isEmpty) return {};
 
-    final headers = rows.first.map((e) => e.toString().trim()).toList();
+    final rawHeaders = rows.first.map((e) => e.toString().trim()).toList();
     final keyIndex = 0;
+
+    // Columns with a blank header have no language name to key by — drop
+    // them instead of writing into a shared "" bucket that different blank
+    // columns would silently overwrite.
+    final languageCols = <int>[
+      for (int col = 1; col < rawHeaders.length; col++)
+        if (rawHeaders[col].isNotEmpty) col,
+    ];
+
+    // Two columns claiming the same language name is a real ambiguity
+    // (which one wins?) rather than something safe to resolve silently.
+    final seenHeaders = <String>{};
+    for (final col in languageCols) {
+      final header = rawHeaders[col];
+      if (!seenHeaders.add(header)) {
+        throw FormatException(
+          'Duplicate language column "$header" — each language must appear in only one column.',
+        );
+      }
+    }
 
     final Map<String, Map<String, String>> translations = {};
 
     // Initialize empty maps for each language column
-    for (int col = 1; col < headers.length; col++) {
-      translations[headers[col]] = {};
+    for (final col in languageCols) {
+      translations[rawHeaders[col]] = {};
     }
 
     for (int rowIndex = 1; rowIndex < rows.length; rowIndex++) {
@@ -33,8 +54,8 @@ class ExcelParser {
       final key = row[keyIndex]?.toString() ?? '';
       if (key.isEmpty) continue;
 
-      for (int col = 1; col < headers.length; col++) {
-        final lang = headers[col];
+      for (final col in languageCols) {
+        final lang = rawHeaders[col];
         final value = row.length > col ? (row[col]?.toString() ?? '') : '';
 
         // If this key already exists for this language
@@ -70,7 +91,22 @@ class ExcelParser {
   Map<String, String> loadExistingJson(String path) {
     final file = File(path);
     if (!file.existsSync()) return {};
-    return Map<String, String>.from(jsonDecode(file.readAsStringSync()));
+    try {
+      final decoded = jsonDecode(file.readAsStringSync());
+      if (decoded is! Map) {
+        AppLogger.error('Existing translation file is not a JSON object, ignoring: $path');
+        return {};
+      }
+      return decoded.map(
+        (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+      );
+    } catch (e) {
+      AppLogger.error(
+        'Failed to read existing translation file, ignoring: $path',
+        [e],
+      );
+      return {};
+    }
   }
 
   Map<String, String> mergeTranslation({

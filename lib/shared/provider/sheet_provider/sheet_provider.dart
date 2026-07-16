@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:translator/translator.dart';
 
@@ -42,6 +44,16 @@ class SuggestedTranslationNotifier
   /// (unofficial) translate endpoint with hundreds of simultaneous requests.
   static const _maxConcurrentRequests = 6;
 
+  /// Per-request cap so a single hung call can't stall the whole batch (and
+  /// the full-screen loading spinner) indefinitely.
+  static const _requestTimeout = Duration(seconds: 15);
+
+  /// Bumped by [cancelSuggestion] and on every new [setSuggestion] call, so
+  /// in-flight requests from a superseded run discard their results instead
+  /// of overwriting newer state (the translator client has no cancel hook,
+  /// so requests already sent still run to completion or timeout).
+  int _generation = 0;
+
   Future<void> setSuggestion(
     Map<String, Map<String, String>>? currentTranslate, {
     String sourceLang = 'en',
@@ -62,11 +74,13 @@ class SuggestedTranslationNotifier
 
     if (pending.isEmpty) return;
 
+    final myGeneration = ++_generation;
     state = state.copyWith(isLoading: true);
     try {
       final results = <String, Map<String, SuggestionItem>>{};
 
       await _runWithConcurrency(pending, _maxConcurrentRequests, (item) async {
+        if (myGeneration != _generation) return;
         final translated = await _translateText(
           item.text,
           from: sourceLang,
@@ -79,12 +93,22 @@ class SuggestedTranslationNotifier
         );
       });
 
+      if (myGeneration != _generation) return;
       state = state.copyWith(translations: results, isLoading: false);
       AppLogger.verbose("SUGGESTION ${state.translations}");
     } catch (e, st) {
-      state = state.copyWith(isLoading: false);
+      if (myGeneration == _generation) {
+        state = state.copyWith(isLoading: false);
+      }
       AppLogger.error("setSuggestion failed", [e, st]);
     }
+  }
+
+  /// Cancels the in-flight auto-translate run; already-sent requests keep
+  /// running but their results are discarded once they land.
+  void cancelSuggestion() {
+    _generation++;
+    state = state.copyWith(isLoading: false);
   }
 
   Future<String> _translateText(
@@ -94,8 +118,13 @@ class SuggestedTranslationNotifier
   }) async {
     if (text.isEmpty) return '';
     try {
-      final result = await _translator.translate(text, from: from, to: to);
+      final result = await _translator
+          .translate(text, from: from, to: to)
+          .timeout(_requestTimeout);
       return result.text;
+    } on TimeoutException catch (e) {
+      AppLogger.error("Translation timed out", [e]);
+      return '';
     } catch (e) {
       AppLogger.error("Translation error", [e]);
       return '';

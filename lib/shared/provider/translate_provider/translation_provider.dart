@@ -3,7 +3,6 @@ import 'package:lan_gen/core/utils/logger.dart';
 import 'package:lan_gen/core/services/excel_parser.dart';
 import 'package:lan_gen/core/services/exportor.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
-import 'package:lan_gen/shared/provider/missing_key.dart';
 import 'package:riverpod/riverpod.dart';
 
 import '../../../core/services/storage_service.dart';
@@ -96,6 +95,7 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
       if (!mounted) return; // <- don't update if disposed
       final fileName = result.files.single.name;
       final sheetData = await _getSheetData(filePath);
+      if (!mounted) return; // notifier may have been disposed while parsing
 
       _addSheetData(
         sheetData: sheetData,
@@ -106,8 +106,6 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
           savedLocaleKeyFilePath: '',
         ),
       );
-
-      ref.read(missingKeyProvider.notifier).detectMissing(sheetData);
     } catch (e, st) {
       _setErrMsg("Failed to import sheet", err: e);
       AppLogger.error("onImportSheet exception", [e, st]);
@@ -184,8 +182,8 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
   Future<void> editHistoryItem(UserTranslationData trData) async {
     try {
       final sheetData = await _getSheetData(trData.excelFilePath);
+      if (!mounted) return;
       state = state.copyWith(translations: sheetData, userData: trData);
-      ref.read(missingKeyProvider.notifier).detectMissing(sheetData);
     } catch (e, st) {
       _setErrMsg("Failed to load project from history", err: e);
       AppLogger.error("editHistoryItem exception", [e, st]);
@@ -198,38 +196,71 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
     try {
       final result = await fileServices.readFile(path: filePath);
       ref.read(rawSheetProvider.notifier).state = result;
-      if (validateRaw(result)) {
-        return ExcelParser.i.parseTranslation(result, ref: ref);
-      }
-      return {};
+      _ensureValidRaw(result);
+      return ExcelParser.i.parseTranslation(result, ref: ref);
     } catch (e, st) {
-      _setErrMsg("Failed to parse sheet", err: e);
+      final message = e is FormatException ? e.message : "Failed to parse sheet";
+      _setErrMsg(message, err: e);
       AppLogger.error("_getSheetData exception", [e, st]);
       rethrow;
     }
   }
 
   bool validateRaw(List<List<dynamic>> rows) {
-    if (rows.isEmpty) return false;
+    try {
+      _ensureValidRaw(rows);
+      return true;
+    } on FormatException {
+      return false;
+    }
+  }
 
+  /// Throws a [FormatException] with a user-facing reason when the sheet
+  /// doesn't have the shape we expect, instead of quietly resolving to an
+  /// empty translation set.
+  void _ensureValidRaw(List<List<dynamic>> rows) {
+    if (rows.isEmpty) {
+      throw const FormatException("The sheet is empty.");
+    }
     final headers = rows.first;
     if (headers.isEmpty || headers.first.toString().toLowerCase() != "key") {
-      return false; // first column must be "key"
+      throw const FormatException('The first column header must be "key".');
     }
-    return true;
+    if (headers.length < 2) {
+      throw const FormatException(
+        'No language columns found — add at least one language column after "key".',
+      );
+    }
   }
 
   Future<void> getSheetData(String filePath, String fileName) async {
-    final sheetData = await _getSheetData(filePath);
-    _addSheetData(
-      sheetData: sheetData,
-      trData: UserTranslationData(
-        name: fileName,
-        excelFilePath: filePath,
-        savedTranslateFilePath: '',
-        savedLocaleKeyFilePath: '',
-      ),
-    );
+    try {
+      final sheetData = await _getSheetData(filePath);
+      if (!mounted) return;
+      _addSheetData(
+        sheetData: sheetData,
+        trData: UserTranslationData(
+          name: fileName,
+          excelFilePath: filePath,
+          savedTranslateFilePath: '',
+          savedLocaleKeyFilePath: '',
+        ),
+      );
+    } catch (_) {
+      // Already logged and surfaced via _setErrMsg inside _getSheetData.
+    }
+  }
+
+  /// Sets a single translation value immutably so every widget watching
+  /// `translationProvider` rebuilds, instead of the caller mutating the
+  /// stored map in place.
+  void setTranslationValue(String lang, String key, String value) {
+    final current = state.translations;
+    if (current == null) return;
+
+    final updated = Map<String, Map<String, String>>.from(current);
+    updated[lang] = {...?current[lang], key: value};
+    state = state.copyWith(translations: updated);
   }
 
   void _addSheetData({
@@ -242,6 +273,18 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
   void _setErrMsg(String errMsg, {dynamic err}) {
     AppLogger.error(errMsg, [err]);
     state = state.copyWith(errMsg: errMsg);
+  }
+
+  /// Clear the current error message once it has been shown to the user.
+  /// Bypasses `copyWith` (which never overwrites `errMsg` with null) so the
+  /// same error can be surfaced again if it recurs.
+  void clearErrMsg() {
+    state = TranslationState(
+      userData: state.userData,
+      translations: state.translations,
+      userTrHistory: state.userTrHistory,
+      errMsg: null,
+    );
   }
 
   /// Validate data before export

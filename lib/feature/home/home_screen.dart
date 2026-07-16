@@ -7,9 +7,9 @@ import 'package:lan_gen/feature/home/widget/export_mode_widget.dart';
 import 'package:lan_gen/feature/home/widget/generate_modal.dart';
 import 'package:lan_gen/feature/preview/sheet_preview.dart';
 import 'package:lan_gen/shared/provider/app_provider.dart';
-import 'package:lan_gen/shared/provider/missing_key.dart';
 import 'package:lan_gen/shared/widget/app_loading.dart';
 
+import '../../core/extensions/context_extensions.dart';
 import '../../shared/app_colors.dart';
 import '../../shared/provider/sheet_provider/sheet_provider.dart';
 import '../../shared/provider/translate_provider/translation_provider.dart';
@@ -44,21 +44,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(translationProvider, (previous, next) {
+      final errMsg = next.errMsg;
+      if (errMsg != null && errMsg != previous?.errMsg) {
+        context.showErrorSnackBar(errMsg);
+        ref.read(translationProvider.notifier).clearErrMsg();
+      }
+    });
+
     return Scaffold(
-      // floatingActionButton: FloatingActionButton.extended(
-      //   onPressed: () {
-      //     final notifier = ref.read(translationProvider.notifier);
-      //     if (notifier.validateData()) {
-      //       ref.read(translationProvider.notifier).onExportAndGenerate();
-      //     } else {
-      //       onShowGenerateModal();
-      //     }
-      //   },
-      //   icon: const Icon(Icons.autorenew_rounded),
-      //   label: const Text("GENERATE"),
-      // ),
-
-
       floatingActionButton: SpeedDial(
         animatedIcon: AnimatedIcons.menu_close,
         animatedIconTheme: IconThemeData(size: 22.0),
@@ -117,12 +111,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.all(12),
                   child: ExportModeWidget(
                     onTap: () async {
-                      AppLoading.show(context);
-                      await ref
-                          .read(suggestedTranslationProvider.notifier)
-                          .setSuggestion(
-                            ref.read(translationProvider).translations,
-                          );
+                      final suggestionNotifier = ref.read(
+                        suggestedTranslationProvider.notifier,
+                      );
+                      AppLoading.show(
+                        context,
+                        onCancel: suggestionNotifier.cancelSuggestion,
+                      );
+                      await suggestionNotifier.setSuggestion(
+                        ref.read(translationProvider).translations,
+                      );
                       if (context.mounted) {
                         AppLoading.close(context);
                       }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lan_gen/shared/provider/translate_provider/translation_provider.dart';
+import 'package:lan_gen/shared/provider/translate_provider/translation_state.dart';
 
 import '../../../shared/themes/app_text_theme.dart';
 import '../../../shared/themes/themes.dart';
@@ -17,12 +18,31 @@ class GenerateModal extends ConsumerStatefulWidget {
 class _GenerateModalState extends ConsumerState<GenerateModal> {
   late TextEditingController translateTextController;
   late TextEditingController localeKeyTextController;
+  bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
     translateTextController = TextEditingController();
     localeKeyTextController = TextEditingController();
+  }
+
+  Future<void> _onGenerateSave(TranslationState state) async {
+    if (_isSaving) return;
+    final data = state.userData;
+    if (data == null) return;
+
+    setState(() => _isSaving = true);
+    final notifier = ref.read(translationProvider.notifier);
+    notifier.setUserData(
+      data.copyWith(
+        savedTranslateFilePath: translateTextController.text.trim(),
+        savedLocaleKeyFilePath: localeKeyTextController.text.trim(),
+      ),
+    );
+    await notifier.onSaveUserData();
+    await notifier.onExportAndGenerate();
+    if (mounted) setState(() => _isSaving = false);
   }
 
   @override
@@ -61,20 +81,9 @@ class _GenerateModalState extends ConsumerState<GenerateModal> {
       persistentFooterButtons: [
         AppButton(
           text: "GENERATE/SAVE",
-          onPressed: isHasValidData()
-              ? () {
-                  final data = state.userData!;
-                  notifier.setUserData(
-                    data.copyWith(
-                      savedTranslateFilePath: translateTextController.text
-                          .trim(),
-                      savedLocaleKeyFilePath: localeKeyTextController.text
-                          .trim(),
-                    ),
-                  );
-                  notifier.onSaveUserData();
-                  notifier.onExportAndGenerate();
-                }
+          isLoading: _isSaving,
+          onPressed: isHasValidData() && !_isSaving
+              ? () => _onGenerateSave(state)
               : null,
           background: AppColors.success,
         ),
@@ -91,7 +100,7 @@ class _GenerateModalState extends ConsumerState<GenerateModal> {
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.border, width: 1),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-                color: AppColors.greyLight,
+                color: AppColors.greyDark,
               ),
               padding: const EdgeInsets.all(8),
               child: Row(
@@ -102,7 +111,7 @@ class _GenerateModalState extends ConsumerState<GenerateModal> {
                           ? "Excel Path"
                           : state.userData!.excelFilePath,
                       style: appTextTheme.bodySmall?.copyWith(
-                        color: AppColors.primary,
+                        color: AppColors.info,
                       ),
                     ),
                   ),
@@ -121,8 +130,10 @@ class _GenerateModalState extends ConsumerState<GenerateModal> {
               cursorColor: AppColors.textPrimary,
               controller: translateTextController,
               onChanged: (value) {
+                final data = state.userData;
+                if (data == null) return;
                 notifier.setUserData(
-                  state.userData!.copyWith(savedTranslateFilePath: value),
+                  data.copyWith(savedTranslateFilePath: value),
                 );
               },
               decoration: const InputDecoration(labelText: "Translation path"),
@@ -132,8 +143,10 @@ class _GenerateModalState extends ConsumerState<GenerateModal> {
               cursorColor: AppColors.textPrimary,
               controller: localeKeyTextController,
               onChanged: (value) {
+                final data = state.userData;
+                if (data == null) return;
                 notifier.setUserData(
-                  state.userData!.copyWith(savedLocaleKeyFilePath: value),
+                  data.copyWith(savedLocaleKeyFilePath: value),
                 );
               },
               decoration: const InputDecoration(labelText: "Locale Keys path"),

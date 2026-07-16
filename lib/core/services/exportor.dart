@@ -41,10 +41,13 @@ class Exportor {
         dir.createSync(recursive: true);
       }
 
+      // Prepare every language's content first so a merge/encoding failure
+      // aborts before anything touches disk.
+      final pendingWrites = <MapEntry<File, String>>[];
       for (final entry in translations.entries) {
         final lang = entry.key;
         final map = entry.value;
-        final file = File('$outputDir/$lang.json');
+        final file = File('$outputDir/${_sanitizeFileName(lang)}.json');
 
         Map<String, dynamic> finalMap = map;
 
@@ -56,9 +59,36 @@ class Exportor {
           );
         }
 
-        await file.writeAsString(
-          JsonEncoder.withIndent('  ').convert(finalMap),
+        pendingWrites.add(
+          MapEntry(file, JsonEncoder.withIndent('  ').convert(finalMap)),
         );
+      }
+
+      // Write everything, keeping a backup of any pre-existing content. If a
+      // write fails partway, restore the files this export already touched
+      // instead of leaving a mix of old and new locale files on disk.
+      final backups = <File, String?>{};
+      try {
+        for (final entry in pendingWrites) {
+          final file = entry.key;
+          backups[file] = file.existsSync() ? await file.readAsString() : null;
+          await file.writeAsString(entry.value);
+        }
+      } catch (e) {
+        for (final entry in backups.entries) {
+          final file = entry.key;
+          final original = entry.value;
+          try {
+            if (original == null) {
+              if (file.existsSync()) file.deleteSync();
+            } else {
+              file.writeAsStringSync(original);
+            }
+          } catch (_) {
+            // Best-effort rollback; ignore secondary failures.
+          }
+        }
+        rethrow;
       }
 
       // Locale key generation
@@ -80,5 +110,11 @@ class Exportor {
       AppLogger.error("❌ exportTranslations failed: $e\n$st");
       rethrow;
     }
+  }
+
+  /// Replaces characters that are illegal (or path separators) in a filename
+  /// so a language header like "en/US" can't escape the export directory.
+  String _sanitizeFileName(String name) {
+    return name.trim().replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
   }
 }

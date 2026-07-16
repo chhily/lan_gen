@@ -19,7 +19,7 @@ Future<void> main() async {
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
 
-    WindowOptions windowOptions = WindowOptions(size: Size(900, 750));
+    WindowOptions windowOptions = WindowOptions(size: Size(1000, 750));
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();

@@ -7,14 +7,33 @@ import '../../shared/themes/themes.dart';
 import '../../shared/widget/app_space.dart';
 import 'widget/drag_drop_section.dart';
 
-class TranslationPreview extends ConsumerWidget {
+class TranslationPreview extends ConsumerStatefulWidget {
   final int? duplicates;
   final void Function()? onPressed;
 
   const TranslationPreview({super.key, this.duplicates, this.onPressed});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TranslationPreview> createState() => _TranslationPreviewState();
+}
+
+class _TranslationPreviewState extends ConsumerState<TranslationPreview> {
+  late final ScrollController _horizontalController;
+
+  @override
+  void initState() {
+    super.initState();
+    _horizontalController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _horizontalController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final providerData = ref.watch(translationProvider);
     final translations = providerData.translations;
     if (translations == null || (translations.isEmpty)) {
@@ -103,89 +122,94 @@ class TranslationPreview extends ConsumerWidget {
             ...missingKeyWarnings,
             ...missingLangWarnings,
             AppSpace.y(),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Tooltip(
-                    message:
-                        "Automatically flags duplicate keys within each language to prevent errors",
-                    child: Badge(
-                      isLabelVisible: duplicates != null && duplicates! > 0,
-                      offset: const Offset(-16, -12),
-                      backgroundColor: AppColors.warning,
-                      label: Padding(
-                        padding: const EdgeInsets.all(2.0),
-                        child: Text("Duplicated $duplicates"),
-                      ),
-                      child: TextButton(
-                        onPressed: onPressed,
-                        style: duplicates != null && duplicates! > 0
-                            ? TextButton.styleFrom(
-                                side: BorderSide(color: AppColors.border),
-                              )
-                            : null,
-                        child: const Text("<PREVIEW TABLE/>"),
+            Scrollbar(
+              controller: _horizontalController,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _horizontalController,
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Tooltip(
+                      message:
+                          "Automatically flags duplicate keys within each language to prevent errors",
+                      child: Badge(
+                        isLabelVisible: widget.duplicates != null && widget.duplicates! > 0,
+                        offset: const Offset(-16, -12),
+                        backgroundColor: AppColors.warning,
+                        label: Padding(
+                          padding: const EdgeInsets.all(2.0),
+                          child: Text("Duplicated ${widget.duplicates}"),
+                        ),
+                        child: TextButton(
+                          onPressed: widget.onPressed,
+                          style: widget.duplicates != null && widget.duplicates! > 0
+                              ? TextButton.styleFrom(
+                                  side: BorderSide(color: AppColors.border),
+                                )
+                              : null,
+                          child: const Text("<PREVIEW TABLE/>"),
+                        ),
                       ),
                     ),
-                  ),
-                  AppSpace.y(),
-                  DataTable(
-                    headingRowColor:
-                        const WidgetStatePropertyAll(AppColors.surface),
-                    border: TableBorder.all(color: AppColors.border),
-                    headingTextStyle:
-                        const TextStyle(fontWeight: FontWeight.bold),
-                    dataRowMinHeight: 48,
-                    columnSpacing: 24,
-                    columns: [
-                      const DataColumn(label: Text("Key")),
-                      for (final lang in languages)
-                        DataColumn(label: Text(lang)),
-                    ],
-                    rows: [
-                      for (final key in keys ?? [])
-                        DataRow(
-                          cells: [
-                            DataCell(
-                              Text(
-                                key,
-                                style: appTextTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                            for (final lang in languages)
+                    AppSpace.y(),
+                    DataTable(
+                      headingRowColor:
+                          const WidgetStatePropertyAll(AppColors.surface),
+                      border: TableBorder.all(color: AppColors.border),
+                      headingTextStyle:
+                          const TextStyle(fontWeight: FontWeight.bold),
+                      dataRowMinHeight: 48,
+                      columnSpacing: 24,
+                      columns: [
+                        const DataColumn(label: Text("Key")),
+                        for (final lang in languages)
+                          DataColumn(label: Text(lang)),
+                      ],
+                      rows: [
+                        for (final key in keys ?? [])
+                          DataRow(
+                            cells: [
                               DataCell(
-                                Container(
-                                  alignment: Alignment.centerLeft,
-                                  width: (translations[lang]?[key]?.isEmpty ??
-                                          true)
-                                      ? 40
-                                      : null,
-                                  color: (translations[lang]?[key]?.isEmpty ??
-                                          true)
-                                      ? AppColors.error.withOpacity(0.2)
-                                      : null,
-                                  child: Text(
-                                    translations[lang]?[key] ?? "",
-                                    textAlign: TextAlign.left,
-                                    style: appTextTheme.bodyMedium?.copyWith(
-                                      color: (translations[lang]?[key]
-                                                  ?.isEmpty ??
-                                              true)
-                                          ? AppColors.error
-                                          : AppColors.textPrimary,
-                                    ),
+                                Text(
+                                  key,
+                                  style: appTextTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ],
+                              for (final lang in languages)
+                                DataCell(
+                                  Container(
+                                    alignment: Alignment.centerLeft,
+                                    width: (translations[lang]?[key]?.isEmpty ??
+                                            true)
+                                        ? 40
+                                        : null,
+                                    color: (translations[lang]?[key]?.isEmpty ??
+                                            true)
+                                        ? AppColors.error.withOpacity(0.2)
+                                        : null,
+                                    child: Text(
+                                      translations[lang]?[key] ?? "",
+                                      textAlign: TextAlign.left,
+                                      style: appTextTheme.bodyMedium?.copyWith(
+                                        color: (translations[lang]?[key]
+                                                    ?.isEmpty ??
+                                                true)
+                                            ? AppColors.error
+                                            : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

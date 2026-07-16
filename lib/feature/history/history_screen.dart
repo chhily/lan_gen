@@ -107,8 +107,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
+          SizedBox(
+            width: 120,
             child: Text(
               "$title: ",
               style: appTextTheme.bodyLarge?.copyWith(
@@ -116,11 +118,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               ),
             ),
           ),
-          SelectableText(
-            value ?? "N/A",
-            selectionColor: AppColors.info,
-            style: appTextTheme.bodyMedium?.copyWith(
-              decoration: TextDecoration.underline,
+          Expanded(
+            child: SelectableText(
+              value ?? "N/A",
+              selectionColor: AppColors.info,
+              style: appTextTheme.bodyMedium?.copyWith(
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
         ],

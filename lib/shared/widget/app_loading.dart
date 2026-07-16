@@ -6,15 +6,18 @@ import '../app_colors.dart';
 class AppLoading extends StatelessWidget {
   final Color? color;
   final double? size;
-  const AppLoading({super.key, this.color, this.size});
+  final VoidCallback? onCancel;
+  const AppLoading({super.key, this.color, this.size, this.onCancel});
 
-  static void show(BuildContext context) {
+  /// [onCancel], if given, shows a Cancel button so a hung operation can be
+  /// dismissed instead of leaving the user stuck behind the barrier forever.
+  static void show(BuildContext context, {VoidCallback? onCancel}) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const PopScope(
+      builder: (context) => PopScope(
         canPop: false,
-        child: AppLoading(),
+        child: AppLoading(onCancel: onCancel),
       ),
     );
   }
@@ -28,9 +31,24 @@ class AppLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: LoadingAnimationWidget.inkDrop(
-        color: color ?? AppColors.greyLight,
-        size: size ?? 24,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LoadingAnimationWidget.inkDrop(
+            color: color ?? AppColors.greyLight,
+            size: size ?? 24,
+          ),
+          if (onCancel != null) ...[
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                onCancel!();
+              },
+              child: const Text("Cancel"),
+            ),
+          ],
+        ],
       ),
     );
   }

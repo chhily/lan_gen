@@ -55,64 +55,69 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
     return Column(
       children: [
         AppSpace.y(y: 32),
-        SingleChildScrollView(
-          controller: _horizontalController,
-          scrollDirection: Axis.horizontal,
-          physics: const ClampingScrollPhysics(),
-          child: SizedBox(
-            width: tableWidth,
-            child: Row(
-              children: [
-                for (int i = 0; i < headers.length; i++)
-                  _headerCell(headers[i], i),
-              ],
-            ),
-          ),
-        ),
-
         Expanded(
           child: Scrollbar(
             controller: _verticalController,
-            thumbVisibility: true,
-            child: SingleChildScrollView(
+            notificationPredicate: (notification) =>
+                notification.metrics.axis == Axis.vertical,
+            child: Scrollbar(
               controller: _horizontalController,
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: tableWidth,
-                child: ListView.builder(
-                  controller: _verticalController,
-                  itemCount: rawSheet.length - 1,
-                  itemBuilder: (context, rowIndex) {
-                    final row = rawSheet[rowIndex + 1];
-
-                    return SizedBox(
-                      height: _rowHeight,
-                      child: Row(
+              notificationPredicate: (notification) =>
+                  notification.metrics.axis == Axis.horizontal,
+              child: SingleChildScrollView(
+                controller: _horizontalController,
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: tableWidth,
+                  child: Column(
+                    children: [
+                      Row(
                         children: [
-                          for (int i = 0; i < row.length; i++)
-                            Builder(
-                              builder: (_) {
-                                final key = row[0]?.toString() ?? '';
-                                final lang = headers[i];
-                                final rawValue = row[i]?.toString() ?? '';
-                                final item =
-                                    suggestions.translations[lang]?[key];
-                                final suggested = item?.value;
-                                final accepted = item?.accepted ?? false;
-
-                                return _buildCell(
-                                  lang: lang,
-                                  key: key,
-                                  rawValue: rawValue,
-                                  suggested: suggested,
-                                  accepted: accepted,
-                                );
-                              },
-                            ),
+                          for (int i = 0; i < headers.length; i++)
+                            _headerCell(headers[i], i),
                         ],
                       ),
-                    );
-                  },
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _verticalController,
+                          itemCount: rawSheet.length - 1,
+                          itemBuilder: (context, rowIndex) {
+                            final row = rawSheet[rowIndex + 1];
+
+                            return SizedBox(
+                              height: _rowHeight,
+                              child: Row(
+                                children: [
+                                  for (int i = 0; i < row.length; i++)
+                                    Builder(
+                                      builder: (_) {
+                                        final key = row[0]?.toString() ?? '';
+                                        final lang = headers[i];
+                                        final rawValue =
+                                            row[i]?.toString() ?? '';
+                                        final item = suggestions
+                                            .translations[lang]?[key];
+                                        final suggested = item?.value;
+                                        final accepted =
+                                            item?.accepted ?? false;
+
+                                        return _buildCell(
+                                          lang: lang,
+                                          key: key,
+                                          rawValue: rawValue,
+                                          suggested: suggested,
+                                          accepted: accepted,
+                                        );
+                                      },
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -130,8 +135,6 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
     required bool accepted,
   }) {
     final suggestionNotifier = ref.read(suggestedTranslationProvider.notifier);
-
-    final trData = ref.watch(translationProvider);
 
     return Container(
       width: _columnWidth,
@@ -181,8 +184,9 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
                           key,
                           value,
                         ) {
-                          trData.translations?[lang]?[key] = value;
-                          setState(() {});
+                          ref
+                              .read(translationProvider.notifier)
+                              .setTranslationValue(lang, key, value);
                         });
                       },
                       child: const Icon(
@@ -220,8 +224,9 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
               ref
                   .read(suggestedTranslationProvider.notifier)
                   .acceptLanguageSuggestion(text, (key, value) {
-                    ref.watch(translationProvider).translations?[text]?[key] =
-                        value;
+                    ref
+                        .read(translationProvider.notifier)
+                        .setTranslationValue(text, key, value);
                   });
             },
       child: Container(

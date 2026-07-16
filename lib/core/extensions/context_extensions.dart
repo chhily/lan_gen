@@ -18,13 +18,11 @@ extension ContextExtension on BuildContext {
   double get bigSpacing => 20;
   double get hugeSpacing => 26;
 
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> get errorSnackBar =>
-      ScaffoldMessenger.of(this).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.red,
-          content: Text("Something went wrong!"),
-        ),
-      );
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showErrorSnackBar([
+    String message = "Something went wrong!",
+  ]) => ScaffoldMessenger.of(this).showSnackBar(
+    SnackBar(backgroundColor: Colors.red, content: Text(message)),
+  );
 
 
   get warningSnackBar => ScaffoldMessenger.of(this).showSnackBar(

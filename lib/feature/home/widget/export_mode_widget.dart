@@ -131,6 +131,7 @@ class ExportModeWidget extends ConsumerWidget {
                         ? () {
                             ref.invalidate(suggestedTranslationProvider);
                             ref.invalidate(rawSheetProvider);
+                            ref.invalidate(duplicateProvider);
                             stateNotifier.clearStateValue();
                           }
                         : null,
