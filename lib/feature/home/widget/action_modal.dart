@@ -29,7 +29,17 @@ class ActionModal extends ConsumerWidget {
         //   ),
         // ),
         // AppSpace.x(),
-
+        SizedBox(
+          width: 140,
+          child: AppButton(
+            text: "IMPORT JSON",
+            icon: Icons.code,
+            onPressed: () {
+              ref.read(translationProvider.notifier).onImportJson();
+            },
+          ),
+        ),
+        AppSpace.x(),
         SizedBox(
           width: 140,
 
@@ -37,7 +47,8 @@ class ActionModal extends ConsumerWidget {
             text: "EXPORT",
             icon: Icons.file_download_rounded,
             onPressed: () {
-              if (ref.watch(translationProvider).translations?.isEmpty ?? true) {
+              if (ref.watch(translationProvider).translations?.isEmpty ??
+                  true) {
                 context.warningSnackBar;
                 return;
               }

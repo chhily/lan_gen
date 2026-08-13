@@ -54,6 +54,29 @@ class SuggestedTranslationNotifier
   /// so requests already sent still run to completion or timeout).
   int _generation = 0;
 
+
+  // Add to SuggestedTranslationNotifier in sheet_provider.dart
+  void acceptAllSuggestions(void Function(String lang, String key, String value) onApply,
+      ) {
+    state.translations.forEach((lang, keysMap) {
+      keysMap.forEach((key, item) {
+        if (!item.accepted) {
+          onApply(lang, key, item.value);
+        }
+      });
+    });
+
+    // Update state to set all as accepted
+    final updatedTranslations = state.translations.map((lang, keysMap) {
+      return MapEntry(
+        lang,
+        keysMap.map((key, item) => MapEntry(key, item.copyWith(accepted: true))),
+      );
+    });
+    state = state.copyWith(translations: updatedTranslations);
+  }
+
+
   Future<void> setSuggestion(
     Map<String, Map<String, String>>? currentTranslate, {
     String sourceLang = 'en',

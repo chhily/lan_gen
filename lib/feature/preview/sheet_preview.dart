@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lan_gen/core/extensions/context_extensions.dart';
 import 'package:lan_gen/shared/themes/app_text_theme.dart';
 import 'package:lan_gen/shared/widget/app_space.dart';
 
@@ -40,6 +39,8 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
   Widget build(BuildContext context) {
     final rawSheet = ref.watch(rawSheetProvider);
     final suggestions = ref.watch(suggestedTranslationProvider);
+    final searchQuery = ref.watch(translationProvider.select((s) => s.searchQuery)).toLowerCase();
+
     if (rawSheet.isEmpty) {
       return Center(
         child: Text(
@@ -50,11 +51,30 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
     }
 
     final headers = rawSheet.first.map((e) => e.toString()).toList();
+    
+    // Filter rows based on search query
+    final filteredRows = rawSheet.skip(1).where((row) {
+      if (searchQuery.isEmpty) return true;
+      return row.any((cell) => cell?.toString().toLowerCase().contains(searchQuery) ?? false);
+    }).toList();
+
     final tableWidth = headers.length * _columnWidth;
 
     return Column(
       children: [
-        AppSpace.y(y: 32),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: TextField(
+            onChanged: (value) => ref.read(translationProvider.notifier).setSearchQuery(value),
+            decoration: InputDecoration(
+              hintText: "Search keys or values...",
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          ),
+        ),
+        AppSpace.y(y: 16),
         Expanded(
           child: Scrollbar(
             controller: _verticalController,
@@ -80,9 +100,9 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
                       Expanded(
                         child: ListView.builder(
                           controller: _verticalController,
-                          itemCount: rawSheet.length - 1,
+                          itemCount: filteredRows.length,
                           itemBuilder: (context, rowIndex) {
-                            final row = rawSheet[rowIndex + 1];
+                            final row = filteredRows[rowIndex];
 
                             return SizedBox(
                               height: _rowHeight,
@@ -107,6 +127,7 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
                                           rawValue: rawValue,
                                           suggested: suggested,
                                           accepted: accepted,
+                                          isKeyColumn: i == 0,
                                         );
                                       },
                                     ),
@@ -133,8 +154,11 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
     required String rawValue,
     required String? suggested,
     required bool accepted,
+    bool isKeyColumn = false,
   }) {
     final suggestionNotifier = ref.read(suggestedTranslationProvider.notifier);
+    final mismatches = ref.watch(translationProvider.notifier).getPlaceholderMismatches();
+    final hasMismatch = mismatches[key]?.contains(lang) ?? false;
 
     return Container(
       width: _columnWidth,
@@ -148,21 +172,42 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
           Positioned.fill(
             child: Align(
               alignment: Alignment.centerLeft,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: accepted
-                      ? AppColors.success
-                      : suggested != null
-                      ? AppColors.warning
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  rawValue.isEmpty && suggested != null ? suggested : rawValue,
-                  style: appTextTheme.bodyMedium?.copyWith(
-                    color: AppColors.textPrimary,
+              child: InkWell(
+                onLongPress: isKeyColumn
+                    ? () => _showKeyOptions(key)
+                    : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: accepted
+                        ? AppColors.success
+                        : suggested != null
+                        ? AppColors.warning
+                        : hasMismatch
+                        ? Colors.red.withOpacity(0.2)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(4),
+                    border: hasMismatch ? Border.all(color: Colors.red, width: 2) : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          rawValue.isEmpty && suggested != null
+                              ? suggested
+                              : rawValue,
+                          style: appTextTheme.bodyMedium?.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (hasMismatch)
+                        const Tooltip(
+                          message: "Placeholder mismatch found!",
+                          child: Icon(Icons.warning_amber_rounded, color: Colors.red, size: 16),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -209,6 +254,62 @@ class _SheetPreviewState extends ConsumerState<SheetPreview> {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  void _showRenameDialog(String oldKey) {
+    final controller = TextEditingController(text: oldKey);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Rename Key"),
+        content: TextField(controller: controller),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              ref
+                  .read(translationProvider.notifier)
+                  .renameKey(oldKey, controller.text);
+              Navigator.pop(context);
+            },
+            child: const Text("Rename"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showKeyOptions(String key) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.edit),
+            title: const Text("Rename Key"),
+            onTap: () {
+              Navigator.pop(context);
+              _showRenameDialog(key);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete, color: Colors.red),
+            title: const Text(
+              "Delete Key",
+              style: TextStyle(color: Colors.red),
+            ),
+            onTap: () {
+              ref.read(translationProvider.notifier).deleteKey(key);
+              Navigator.pop(context);
+            },
+          ),
         ],
       ),
     );

@@ -88,29 +88,47 @@ class ExportModeWidget extends ConsumerWidget {
           children: [
             Text("<Auto tr/>"),
             AppSpace.y(y: AppDimensions.sm),
-            Tooltip(
-              message: "Automatically translate missing values across all languages",
-              child: InkWell(
-                onTap: onTap,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: AppColors.borderDark),
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                  child: Text(
-                    "AUTO FILL",
-                    style: appTextTheme.bodyMedium?.copyWith(
-                      color: ref.read(translationProvider.notifier).validateData()
-                          ? AppColors.success
-                          : AppColors.textPrimary,
+            Row(
+              children: [
+                Tooltip(
+                  message: "Automatically translate missing values",
+                  child: InkWell(
+                    onTap: onTap,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.borderDark),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                      child: Text(
+                        "AUTO FILL",
+                        style: appTextTheme.bodyMedium?.copyWith(
+                          color: ref.read(translationProvider.notifier).validateData()
+                              ? AppColors.success
+                              : AppColors.textPrimary,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                AppSpace.x(x: 8),
+                Tooltip(
+                  message: "Accept all suggestions",
+                  child: IconButton(
+                    onPressed: () {
+                      ref.read(suggestedTranslationProvider.notifier).acceptAllSuggestions(
+                        (lang, key, value) {
+                          ref.read(translationProvider.notifier).setTranslationValue(lang, key, value);
+                        },
+                      );
+                    },
+                    icon: const Icon(Icons.done_all, color: AppColors.success),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        Spacer(),
+        const Spacer(),
         Column(
           children: [
             Text(
@@ -120,6 +138,32 @@ class ExportModeWidget extends ConsumerWidget {
                 color: AppColors.textPrimary,
               ),
             ),
+            AppSpace.y(y: AppDimensions.xs),
+            // Progress Indicator
+            if (isHasProject())
+              Builder(
+                builder: (context) {
+                  final progress = ref.watch(translationProvider.notifier).getTranslationProgress();
+                  final overall = progress.isEmpty 
+                      ? 0.0 
+                      : progress.values.reduce((a, b) => a + b) / progress.length;
+                  
+                  return Tooltip(
+                    message: progress.entries
+                        .map((e) => "${e.key}: ${(e.value * 100).toInt()}%")
+                        .join("\n"),
+                    child: SizedBox(
+                      width: 200,
+                      height: 4,
+                      child: LinearProgressIndicator(
+                        value: overall,
+                        backgroundColor: AppColors.borderDark,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  );
+                },
+              ),
             AppSpace.y(y: AppDimensions.sm),
             Row(
               children: [

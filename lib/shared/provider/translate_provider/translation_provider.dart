@@ -25,6 +25,50 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
     loadProjectHistory();
   }
 
+  // Add to TranslationNotifier
+  void renameKey(String oldKey, String newKey) {
+    final current = state.translations;
+    if (current == null || oldKey == newKey) return;
+
+    final updated = current.map((lang, keysMap) {
+      final newMap = Map<String, String>.from(keysMap);
+      if (newMap.containsKey(oldKey)) {
+        final value = newMap.remove(oldKey);
+        newMap[newKey] = value!;
+      }
+      return MapEntry(lang, newMap);
+    });
+    state = state.copyWith(translations: updated);
+
+    // Sync with rawSheetProvider for UI update
+    final rawNotifier = ref.read(rawSheetProvider.notifier);
+    final rawData = List<List<dynamic>>.from(rawNotifier.state);
+    for (var i = 1; i < rawData.length; i++) {
+      if (rawData[i].isNotEmpty && rawData[i][0].toString() == oldKey) {
+        rawData[i][0] = newKey;
+        break;
+      }
+    }
+    rawNotifier.state = rawData;
+  }
+
+  void deleteKey(String key) {
+    final current = state.translations;
+    if (current == null) return;
+
+    final updated = current.map((lang, keysMap) {
+      final newMap = Map<String, String>.from(keysMap)..remove(key);
+      return MapEntry(lang, newMap);
+    });
+    state = state.copyWith(translations: updated);
+
+    // Sync with rawSheetProvider for UI update
+    final rawNotifier = ref.read(rawSheetProvider.notifier);
+    final rawData = List<List<dynamic>>.from(rawNotifier.state);
+    rawData.removeWhere((row) => row.isNotEmpty && row[0].toString() == key);
+    rawNotifier.state = rawData;
+  }
+
   /// Returns a map: language -> list of missing keys (missing = not present or empty string)
   Map<String, List<String>> getMissingKeysPerLanguage() {
     final translations = state.translations;
@@ -261,6 +305,23 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
     final updated = Map<String, Map<String, String>>.from(current);
     updated[lang] = {...?current[lang], key: value};
     state = state.copyWith(translations: updated);
+
+    // Sync with rawSheetProvider for UI update
+    final rawNotifier = ref.read(rawSheetProvider.notifier);
+    final rawData = List<List<dynamic>>.from(rawNotifier.state);
+    if (rawData.isNotEmpty) {
+      final headers = rawData.first;
+      final langIndex = headers.indexOf(lang);
+      if (langIndex != -1) {
+        for (var i = 1; i < rawData.length; i++) {
+          if (rawData[i].isNotEmpty && rawData[i][0].toString() == key) {
+            rawData[i][langIndex] = value;
+            break;
+          }
+        }
+      }
+    }
+    rawNotifier.state = rawData;
   }
 
   void _addSheetData({
@@ -302,6 +363,90 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
     loadProjectHistory();
   }
 
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
+  }
+
+  Map<String, List<String>> getPlaceholderMismatches() {
+    final translations = state.translations;
+    if (translations == null || translations.isEmpty) return {};
+
+    final regex = RegExp(r'\{.*?\}|%[sd]');
+    final mismatches = <String, List<String>>{};
+
+    final sourceLang = translations.keys.first;
+    final sourceMap = translations[sourceLang] ?? {};
+
+    for (final key in sourceMap.keys) {
+      final sourcePlaceholders =
+          regex.allMatches(sourceMap[key]!).map((m) => m.group(0)).toSet();
+
+      for (final lang in translations.keys) {
+        if (lang == sourceLang) continue;
+        final targetVal = translations[lang]?[key] ?? "";
+        if (targetVal.isEmpty) continue;
+
+        final targetPlaceholders =
+            regex.allMatches(targetVal).map((m) => m.group(0)).toSet();
+
+        if (!sourcePlaceholders.containsAll(targetPlaceholders) ||
+            !targetPlaceholders.containsAll(sourcePlaceholders)) {
+          mismatches.putIfAbsent(key, () => []).add(lang);
+        }
+      }
+    }
+    return mismatches;
+  }
+
+  Future<void> onImportJson() async {
+    try {
+      final result = await fileServices.pickJsonFiles();
+      if (result == null || result.files.isEmpty) return;
+
+      final Map<String, Map<String, String>> importedTranslations = {};
+      for (final file in result.files) {
+        final path = file.path;
+        if (path == null) continue;
+        final lang = file.name.split('.').first;
+        final content = await fileServices.readJsonFile(path);
+        importedTranslations[lang] = Map<String, String>.from(content);
+      }
+
+      if (importedTranslations.isEmpty) return;
+
+      // Convert to raw sheet format for the grid
+      final allKeys = <String>{};
+      for (final langMap in importedTranslations.values) {
+        allKeys.addAll(langMap.keys);
+      }
+
+      final List<String> headers = ['key', ...importedTranslations.keys];
+      final List<List<dynamic>> rows = [headers];
+
+      for (final key in allKeys) {
+        final row = [key];
+        for (final lang in importedTranslations.keys) {
+          row.add(importedTranslations[lang]?[key] ?? '');
+        }
+        rows.add(row);
+      }
+
+      ref.read(rawSheetProvider.notifier).state = rows;
+      state = state.copyWith(
+        translations: importedTranslations,
+        userData: UserTranslationData(
+          name: "Imported JSON",
+          excelFilePath: '',
+          savedTranslateFilePath: '',
+          savedLocaleKeyFilePath: '',
+        ),
+      );
+    } catch (e, st) {
+      _setErrMsg("Failed to import JSON", err: e);
+      AppLogger.error("onImportJson exception", [e, st]);
+    }
+  }
+
   Future<void> onDownloadTemplate() async {
     try {
       String? outputFile = await FilePicker.platform.saveFile(
@@ -318,5 +463,22 @@ class TranslationNotifier extends StateNotifier<TranslationState> {
       _setErrMsg("Failed to save template", err: e);
       AppLogger.error("onDownloadTemplate exception", [e, st]);
     }
+  }
+
+  Map<String, double> getTranslationProgress() {
+    final translations = state.translations;
+    if (translations == null || translations.isEmpty) return {};
+
+    final allKeys = <String>{};
+    for (final lang in translations.keys) {
+      allKeys.addAll(translations[lang]?.keys ?? []);
+    }
+    final totalKeys = allKeys.length;
+    if (totalKeys == 0) return {};
+
+    return translations.map((lang, keysMap) {
+      final translatedCount = keysMap.values.where((v) => v.isNotEmpty).length;
+      return MapEntry(lang, translatedCount / totalKeys);
+    });
   }
 }

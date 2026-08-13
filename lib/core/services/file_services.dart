@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:excel/excel.dart';
@@ -19,6 +20,24 @@ class FileServices {
     } catch (e) {
       rethrow;
     }
+  }
+
+  Future<FilePickerResult?> pickJsonFiles() async {
+    try {
+      return await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        allowMultiple: true,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> readJsonFile(String path) async {
+    final file = File(path);
+    final content = await file.readAsString();
+    return jsonDecode(content) as Map<String, dynamic>;
   }
 
   //./ Reads and decodes the workbook off the UI thread — `ExceldecodeBytes`

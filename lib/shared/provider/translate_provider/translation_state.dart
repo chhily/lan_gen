@@ -6,12 +6,14 @@ class TranslationState {
   final Map<String, Map<String, String>>? translations;
   final List<UserTranslationData>? userTrHistory;
   final String? errMsg;
+  final String searchQuery;
 
   TranslationState({
     this.userData,
     this.translations = const {},
     this.userTrHistory = const [],
     this.errMsg,
+    this.searchQuery = '',
   });
 
   TranslationState.initial({
@@ -19,6 +21,7 @@ class TranslationState {
     this.translations,
     this.errMsg,
     this.userTrHistory,
+    this.searchQuery = '',
   });
   TranslationState copyWith({
     UserTranslationData? userData,
@@ -27,12 +30,14 @@ class TranslationState {
     ExportMode? exportMode,
     bool? useCamelCase,
     String? errMsg,
+    String? searchQuery,
   }) {
     return TranslationState(
       userData: userData ?? this.userData,
       translations: translations ?? this.translations,
       userTrHistory: userTrHistory ?? this.userTrHistory,
       errMsg: errMsg ?? this.errMsg,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 }
