@@ -32,7 +32,7 @@ class Exportor {
 
       if (outputDir == null || outputDir.isEmpty) {
         // Instead of throwing, handle gracefully
-        AppLogger.info("⚠️ User canceled directory selection.");
+        AppLogger.info("User canceled directory selection.");
         return;
       }
 
@@ -107,7 +107,7 @@ class Exportor {
         useCamelCase: useCamelCase,
       );
     } catch (e, st) {
-      AppLogger.error("❌ exportTranslations failed: $e\n$st");
+      AppLogger.error("exportTranslations failed: $e\n$st");
       rethrow;
     }
   }

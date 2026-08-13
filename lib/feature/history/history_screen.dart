@@ -19,86 +19,91 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   Widget build(BuildContext context) {
     final provider = ref.watch(translationProvider);
     final userTrData = provider.userTrHistory;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("<HISTORY/>", style: appTextTheme.headlineSmall),
-        automaticallyImplyLeading: false,
-      ),
-      body: ListView.separated(
-        padding: EdgeInsets.all(12),
-        itemCount: userTrData?.length ?? 0,
-        separatorBuilder: (context, index) => AppSpace.y(),
-        itemBuilder: (context, index) {
-          final itemValue = userTrData?.elementAt(index);
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            _buildText(
-                              title: "Project Name",
-                              value: itemValue?.name,
-                            ),
-                            _buildText(
-                              title: "Excel Path",
-                              value: itemValue?.excelFilePath,
-                            ),
-                            _buildText(
-                              title: "Json Path",
-                              value: itemValue?.savedTranslateFilePath,
-                            ),
-                            _buildText(
-                              title: "Key Path",
-                              value: itemValue?.savedLocaleKeyFilePath,
-                            ),
-                          ],
+    return ClipRRect(
+      borderRadius: BorderRadiusGeometry.circular(AppDimensions.radiusLg),
+      child: Scaffold(
+        backgroundColor: AppColors.surfaceAlt,
+        appBar: AppBar(
+          backgroundColor: AppColors.surfaceAlt,
+          title: Text("<HISTORY/>", style: appTextTheme.headlineSmall),
+          automaticallyImplyLeading: false,
+        ),
+        body: ListView.separated(
+          padding: EdgeInsets.all(12),
+          itemCount: userTrData?.length ?? 0,
+          separatorBuilder: (context, index) => AppSpace.y(),
+          itemBuilder: (context, index) {
+            final itemValue = userTrData?.elementAt(index);
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _buildText(
+                                title: "Project Name",
+                                value: itemValue?.name,
+                              ),
+                              _buildText(
+                                title: "Excel Path",
+                                value: itemValue?.excelFilePath,
+                              ),
+                              _buildText(
+                                title: "Json Path",
+                                value: itemValue?.savedTranslateFilePath,
+                              ),
+                              _buildText(
+                                title: "Key Path",
+                                value: itemValue?.savedLocaleKeyFilePath,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  AppSpace.y(),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AppButton(
-                          text: "DELETE",
-                          onPressed: () {
-                            if (itemValue != null) {
-                              ref
-                                  .read(translationProvider.notifier)
-                                  .deleteHistoryItem(itemValue);
-                            }
-                          },
-                          background: AppColors.error,
+                      ],
+                    ),
+                    AppSpace.y(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppButton(
+                            text: "DELETE",
+                            onPressed: () {
+                              if (itemValue != null) {
+                                ref
+                                    .read(translationProvider.notifier)
+                                    .deleteHistoryItem(itemValue);
+                              }
+                            },
+                            background: AppColors.error,
+                          ),
                         ),
-                      ),
-                      AppSpace.x(),
-                      Expanded(
-                        child: AppButton(
-                          text: "EDIT",
-                          onPressed: () {
-                            if (itemValue != null) {
-                              ref
-                                  .read(translationProvider.notifier)
-                                  .editHistoryItem(itemValue);
-                              Navigator.pop(context);
-                            }
-                          },
+                        AppSpace.x(),
+                        Expanded(
+                          child: AppButton(
+                            text: "EDIT",
+                            onPressed: () {
+                              if (itemValue != null) {
+                                ref
+                                    .read(translationProvider.notifier)
+                                    .editHistoryItem(itemValue);
+                                Navigator.pop(context);
+                              }
+                            },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

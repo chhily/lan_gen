@@ -41,8 +41,17 @@ class ExportModeWidget extends ConsumerWidget {
                     .setExportMode(ExportMode.values[index]);
               },
               children: const [
-                Padding(padding: EdgeInsets.all(8), child: Text("OVERWRITE")),
-                Padding(padding: EdgeInsets.all(8), child: Text("MERGE")),
+                Tooltip(
+                  message: "Replace existing translation files entirely",
+                  child: Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text("OVERWRITE"),
+                  ),
+                ),
+                Tooltip(
+                  message: "Merge new translations into existing files, keeping untouched keys",
+                  child: Padding(padding: EdgeInsets.all(8), child: Text("MERGE")),
+                ),
               ],
             ),
           ],
@@ -61,9 +70,12 @@ class ExportModeWidget extends ConsumerWidget {
               },
               isSelected: [appProvider.useCamelCase],
               children: [
-                Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Text("USE CAMELCASE"),
+                Tooltip(
+                  message: "Generate locale keys in camelCase instead of the default format",
+                  child: Padding(
+                    padding: EdgeInsets.all(8),
+                    child: Text("USE CAMELCASE"),
+                  ),
                 ),
               ],
             ),
@@ -76,19 +88,22 @@ class ExportModeWidget extends ConsumerWidget {
           children: [
             Text("<Auto tr/>"),
             AppSpace.y(y: AppDimensions.sm),
-            InkWell(
-              onTap: onTap,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.borderDark),
-                ),
-                padding: EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-                child: Text(
-                  "AUTO FILL",
-                  style: appTextTheme.bodyMedium?.copyWith(
-                    color: ref.read(translationProvider.notifier).validateData()
-                        ? AppColors.success
-                        : AppColors.textPrimary,
+            Tooltip(
+              message: "Automatically translate missing values across all languages",
+              child: InkWell(
+                onTap: onTap,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.borderDark),
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                  child: Text(
+                    "AUTO FILL",
+                    style: appTextTheme.bodyMedium?.copyWith(
+                      color: ref.read(translationProvider.notifier).validateData()
+                          ? AppColors.success
+                          : AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ),
@@ -108,34 +123,40 @@ class ExportModeWidget extends ConsumerWidget {
             AppSpace.y(y: AppDimensions.sm),
             Row(
               children: [
-                SizedBox(
-                  width: 140,
-                  child: AppButton(
-                    text: "SAVE",
-                    fixedSize: Size.fromHeight(48),
-                    onPressed: isHasProject()
-                        ? () {
-                            stateNotifier.onSaveUserData();
-                          }
-                        : null,
-                    background: AppColors.success,
+                Tooltip(
+                  message: "Save the current project's translation data",
+                  child: SizedBox(
+                    width: 140,
+                    child: AppButton(
+                      text: "SAVE",
+                      fixedSize: Size.fromHeight(48),
+                      onPressed: isHasProject()
+                          ? () {
+                              stateNotifier.onSaveUserData();
+                            }
+                          : null,
+                      background: AppColors.success,
+                    ),
                   ),
                 ),
                 AppSpace.x(),
-                SizedBox(
-                  width: 140,
-                  child: AppButton(
-                    text: "Clear",
-                    fixedSize: Size.fromHeight(48),
-                    onPressed: isHasProject()
-                        ? () {
-                            ref.invalidate(suggestedTranslationProvider);
-                            ref.invalidate(rawSheetProvider);
-                            ref.invalidate(duplicateProvider);
-                            stateNotifier.clearStateValue();
-                          }
-                        : null,
-                    background: AppColors.error,
+                Tooltip(
+                  message: "Clear all loaded data and reset the current session",
+                  child: SizedBox(
+                    width: 140,
+                    child: AppButton(
+                      text: "Clear",
+                      fixedSize: Size.fromHeight(48),
+                      onPressed: isHasProject()
+                          ? () {
+                              ref.invalidate(suggestedTranslationProvider);
+                              ref.invalidate(rawSheetProvider);
+                              ref.invalidate(duplicateProvider);
+                              stateNotifier.clearStateValue();
+                            }
+                          : null,
+                      background: AppColors.error,
+                    ),
                   ),
                 ),
               ],

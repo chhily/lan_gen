@@ -21,7 +21,7 @@ class FileServices {
     }
   }
 
-  /// Reads and decodes the workbook off the UI thread — `Excel.decodeBytes`
+  //./ Reads and decodes the workbook off the UI thread — `ExceldecodeBytes`
   /// is CPU-heavy and would otherwise freeze the UI on large files.
   Future<List<List<dynamic>>> readFile({required String? path}) async {
     if (path == null) return [];

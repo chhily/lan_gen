@@ -38,7 +38,7 @@ class ActionModal extends ConsumerWidget {
             icon: Icons.file_download_rounded,
             onPressed: () {
               if (ref.watch(translationProvider).translations?.isEmpty ?? true) {
-                context.warningSnackBar();
+                context.warningSnackBar;
                 return;
               }
               final notifier = ref.read(translationProvider.notifier);

@@ -41,7 +41,7 @@ class _DragDropSectionState extends ConsumerState<DragDropSection> {
       onDragEntered: (_) => setState(() => _dragging = true),
       onDragExited: (_) => setState(() => _dragging = false),
       onDragDone: (detail) => _handleFileDrop(detail.files),
-      child: GestureDetector(
+      child: InkWell(
         onTap: () {
           ref.read(translationProvider.notifier).onImportSheet();
         },

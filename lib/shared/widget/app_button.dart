@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lan_gen/shared/utils/util.dart';
 
 import '../app_colors.dart';
 import '../app_dimensions.dart';
@@ -45,12 +46,16 @@ class AppButton extends StatelessWidget {
             backgroundColor: background,
             fixedSize: fixedSize,
           ),
-          onPressed: onPressed,
+          onPressed: () {
+            Debouncer().run(() => onPressed?.call());
+          },
           child: _buildButtonContent(context),
         );
       case AppButtonType.secondary:
         return ElevatedButton(
-          onPressed: onPressed,
+          onPressed: () {
+            Debouncer().run(() => onPressed?.call());
+          },
           style: ElevatedButton.styleFrom(
             backgroundColor: background ?? AppColors.surface,
             foregroundColor: AppColors.textPrimary,
@@ -60,13 +65,17 @@ class AppButton extends StatelessWidget {
         );
       case AppButtonType.outline:
         return OutlinedButton(
-          onPressed: onPressed,
+          onPressed: () {
+            Debouncer().run(() => onPressed?.call());
+          },
           style: OutlinedButton.styleFrom(fixedSize: fixedSize),
           child: _buildButtonContent(context),
         );
       case AppButtonType.text:
         return TextButton(
-          onPressed: onPressed,
+          onPressed: () {
+            Debouncer().run(() => onPressed?.call());
+          },
           style: TextButton.styleFrom(fixedSize: fixedSize),
           child: _buildButtonContent(context),
         );
