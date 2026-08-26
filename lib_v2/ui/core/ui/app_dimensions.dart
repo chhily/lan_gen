@@ -11,6 +11,8 @@ class AppDimensions {
 
   // Border Radius
   static const double radiusXs = 4.0;
+
+  /// 8dp
   static const double radiusSm = 8.0;
   static const double radiusMd = 12.0;
   static const double radiusLg = 16.0;
@@ -26,7 +28,6 @@ class AppDimensions {
   static const double inputHeightSmall = 40.0;
 
   // Card Dimensions
-  /// 12dp
   static const double cardRadius = 12.0;
   static const double cardElevation = 0.0;
 

@@ -9,7 +9,7 @@ import 'package:lan_gen/shared/themes/app_theme.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'feature/home/home_screen.dart';
+import 'ui/feature_home/widgets/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,7 +52,7 @@ class _MyAppState extends State<MyApp> {
       title: 'LAN~GEN',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: HomeScreen(),
+      home: HomePage(),
     );
   }
 }
